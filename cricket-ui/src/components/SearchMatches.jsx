@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { loadMatches, deleteMatch as deleteMatchFromStorage } from '../services/matchService'
+import { logger } from '../lib/logger'
 import './SearchMatches.css'
 
 function SearchMatches({ onLoadMatch }) {
@@ -9,6 +10,7 @@ function SearchMatches({ onLoadMatch }) {
   const [filterFormat, setFilterFormat] = useState('all')
   const [sortBy, setSortBy] = useState('date-desc')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     loadMatchesData()
@@ -16,11 +18,13 @@ function SearchMatches({ onLoadMatch }) {
 
   const loadMatchesData = async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const loadedMatches = await loadMatches()
-      setMatches(loadedMatches)
+      setMatches(Array.isArray(loadedMatches) ? loadedMatches : [])
     } catch (error) {
-      console.error('Error loading matches:', error)
+      logger.error('matches.load_failed', { error })
+      setLoadError('Failed to load matches. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -32,7 +36,7 @@ function SearchMatches({ onLoadMatch }) {
         await deleteMatchFromStorage(matchId)
         setMatches(matches.filter(m => m.id !== matchId))
       } catch (error) {
-        console.error('Error deleting match:', error)
+        logger.error('match.delete_failed', { error, matchId })
         alert('Failed to delete match. Please try again.')
       }
     }
@@ -42,32 +46,36 @@ function SearchMatches({ onLoadMatch }) {
     .filter(match => {
       // Search filter
       const query = searchQuery.toLowerCase()
-      const matchesSearch = !query || 
-        match.matchData.team1.toLowerCase().includes(query) ||
-        match.matchData.team2.toLowerCase().includes(query) ||
-        match.matchData.venue.toLowerCase().includes(query) ||
-        match.matchData.matchType.toLowerCase().includes(query) ||
-        match.battingStats.some(stat => stat.playerName.toLowerCase().includes(query)) ||
-        match.bowlingStats.some(stat => stat.playerName.toLowerCase().includes(query))
+      const md = match?.matchData || {}
+      const batting = Array.isArray(match?.battingStats) ? match.battingStats : []
+      const bowling = Array.isArray(match?.bowlingStats) ? match.bowlingStats : []
+
+      const matchesSearch = !query ||
+        String(md.team1 || '').toLowerCase().includes(query) ||
+        String(md.team2 || '').toLowerCase().includes(query) ||
+        String(md.venue || '').toLowerCase().includes(query) ||
+        String(md.matchType || '').toLowerCase().includes(query) ||
+        batting.some(stat => String(stat?.playerName || '').toLowerCase().includes(query)) ||
+        bowling.some(stat => String(stat?.playerName || '').toLowerCase().includes(query))
 
       // Type filter
-      const matchesType = filterType === 'all' || match.matchData.matchType === filterType
+      const matchesType = filterType === 'all' || md.matchType === filterType
 
       // Format filter
-      const matchesFormat = filterFormat === 'all' || match.matchData.format === filterFormat
+      const matchesFormat = filterFormat === 'all' || md.format === filterFormat
 
       return matchesSearch && matchesType && matchesFormat
     })
     .sort((a, b) => {
       switch (sortBy) {
         case 'date-desc':
-          return new Date(b.matchData.date) - new Date(a.matchData.date)
+          return new Date(b?.matchData?.date || 0) - new Date(a?.matchData?.date || 0)
         case 'date-asc':
-          return new Date(a.matchData.date) - new Date(b.matchData.date)
+          return new Date(a?.matchData?.date || 0) - new Date(b?.matchData?.date || 0)
         case 'team-asc':
-          return a.matchData.team1.localeCompare(b.matchData.team1)
+          return String(a?.matchData?.team1 || '').localeCompare(String(b?.matchData?.team1 || ''))
         case 'venue-asc':
-          return a.matchData.venue.localeCompare(b.matchData.venue)
+          return String(a?.matchData?.venue || '').localeCompare(String(b?.matchData?.venue || ''))
         default:
           return 0
       }
@@ -86,6 +94,13 @@ function SearchMatches({ onLoadMatch }) {
   return (
     <div className="search-matches">
       <h2>Search Previous Matches</h2>
+
+      {loadError && (
+        <div className="no-results" role="alert">
+          <p>{loadError}</p>
+          <button className="action-button load-button" onClick={loadMatchesData}>Retry</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="loading-matches">

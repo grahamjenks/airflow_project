@@ -5,7 +5,8 @@ import BowlingStats from './components/BowlingStats'
 import StatisticsView from './components/StatisticsView'
 import SearchMatches from './components/SearchMatches'
 import { saveMatch as saveMatchToStorage } from './services/matchService'
-import { isSupabaseConfigured } from './lib/supabase'
+import { clearToken, getToken, isApiConfigured, login as apiLogin } from './lib/apiClient'
+import { logger } from './lib/logger'
 import './App.css'
 
 function App() {
@@ -15,14 +16,25 @@ function App() {
   const [currentView, setCurrentView] = useState('match')
   const [currentMatchId, setCurrentMatchId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [token, setToken] = useState(() => (isApiConfigured() ? getToken() : null))
+  const [loginUsername, setLoginUsername] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState(null)
 
   const saveMatch = useCallback(async () => {
     if (!matchData) return
     
     setIsSaving(true)
     try {
+      const makeId = () => {
+        if (currentMatchId) return currentMatchId
+        if (isApiConfigured()) {
+          return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `match-${Date.now()}`
+        }
+        return `match-${Date.now()}`
+      }
       const matchToSave = {
-        id: currentMatchId || `match-${Date.now()}`,
+        id: makeId(),
         matchData,
         battingStats,
         bowlingStats,
@@ -35,7 +47,7 @@ function App() {
         setCurrentMatchId(savedId)
       }
     } catch (error) {
-      console.error('Error saving match:', error)
+      logger.error('match.save_failed', { error, currentMatchId })
     } finally {
       setIsSaving(false)
     }
@@ -84,15 +96,39 @@ function App() {
     setCurrentView('match')
   }
 
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setLoginError(null)
+    try {
+      const t = await apiLogin(loginUsername, loginPassword)
+      setToken(t)
+      setLoginPassword('')
+    } catch (error) {
+      logger.error('auth.login_failed', { error })
+      setLoginError('Login failed')
+    }
+  }
+
+  const handleLogout = () => {
+    clearToken()
+    setToken(null)
+  }
+
   return (
     <div className="app">
       <header className="app-header">
         <h1>🏏 Cricket Statistics Tracker</h1>
         <div className="storage-status">
-          {isSupabaseConfigured() ? (
-            <span className="status-online" title="Connected to Supabase">
-              ☁️ Cloud Storage Active
-            </span>
+          {isApiConfigured() ? (
+            token ? (
+              <span className="status-online" title="Connected to API">
+                ☁️ API Storage Active
+              </span>
+            ) : (
+              <span className="status-offline" title="API configured but not logged in">
+                🔒 Login Required
+              </span>
+            )
           ) : (
             <span className="status-offline" title="Using local storage only">
               💾 Local Storage Only
@@ -100,6 +136,38 @@ function App() {
           )}
           {isSaving && <span className="saving-indicator">Saving...</span>}
         </div>
+
+        {isApiConfigured() && !token && (
+          <form onSubmit={handleLogin} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+            <input
+              type="text"
+              placeholder="Username"
+              value={loginUsername}
+              onChange={(e) => setLoginUsername(e.target.value)}
+              style={{ padding: 8, borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)' }}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              style={{ padding: 8, borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)' }}
+            />
+            <button type="submit" style={{ padding: '8px 12px', borderRadius: 6 }}>
+              Login
+            </button>
+            {loginError && <span role="alert" style={{ marginLeft: 8 }}>{loginError}</span>}
+          </form>
+        )}
+
+        {isApiConfigured() && token && (
+          <div style={{ marginTop: 8 }}>
+            <button onClick={handleLogout} style={{ padding: '6px 10px', borderRadius: 6 }}>
+              Logout
+            </button>
+          </div>
+        )}
+
         <nav className="nav-tabs">
           <button 
             className={currentView === 'match' ? 'active' : ''}

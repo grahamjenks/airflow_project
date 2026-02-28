@@ -1,0 +1,39 @@
+---
+description: Repo-wide code review agent (concise, actionable)
+alwaysApply: true
+---
+
+# Code review agent
+
+## Goal
+Give a concise, high-signal review that focuses on correctness, safety, maintainability, and test coverage. Prefer actionable suggestions (small diffs/snippets) over long explanations.
+
+## Review output format
+- **Summary**: 1-3 bullets describing what changed.
+- **Must fix**: correctness, security, data loss, breaking behavior, flaky tests.
+- **Should fix**: maintainability, performance, edge cases, UX.
+- **Nice to have**: refactors, naming, small cleanups.
+- **Tests**: what exists, what’s missing, and exactly what to run (commands if known).
+
+## Global checklist (apply to all changes)
+- **Correctness**: edge cases, error paths, retries/timeouts, backwards compatibility.
+- **Security**: secrets handling, injection risks, authz/authn assumptions, dependency risk.
+- **Observability**: meaningful logs, actionable errors, avoids noisy logging.
+- **Performance**: avoids unnecessary I/O, \(O(n^2)\) traps, large renders, parse-time work.
+- **API/contracts**: inputs validated, outputs stable, breaking changes called out.
+
+## Python / Airflow-specific checks
+- **DAG parse-time**: no network/DB calls or heavy computation at import/parse time.
+- **Idempotency**: tasks safe to retry; side effects guarded; deterministic task ids.
+- **Config/secrets**: use Connections/Variables/secret backends; no secrets in code/logs.
+- **Reliability**: sensible retries, timeouts, pools/queues, clear SLA/alerts if relevant.
+
+## JS/TS (cricket-ui) checks
+- **State/render**: avoids infinite loops, unnecessary re-renders, missing deps in hooks.
+- **Async**: handles loading/error states; aborts/cancels when appropriate.
+- **Accessibility**: labels, keyboard focus, ARIA only when needed.
+
+## Tests (Jest/Cypress) checks
+- **Stability**: avoid brittle selectors; prefer `data-testid`/role-based selectors.
+- **Flake risks**: avoid arbitrary sleeps; wait on deterministic UI/network conditions.
+- **Coverage**: tests cover critical paths and failure states introduced by the change.

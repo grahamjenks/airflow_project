@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cricket-api
+  labels:
+    app: cricket-api
+spec:
+  selector:
+    app: cricket-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cricket-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cricket-api
+  template:
+    metadata:
+      labels:
+        app: cricket-api
+    spec:
+      containers:
+        - name: api
+          image: IMAGE_REPLACE_ME
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: PORT
+              value: "8000"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cricket-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cricket-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: cricket-secrets
+                  key: POSTGRES_DB
+            - name: DATABASE_URL
+              value: postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@cricket-postgres:5432/$(POSTGRES_DB)
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cricket-secrets
+                  key: JWT_SECRET
+            - name: JWT_ISSUER
+              value: cricket-api
+            - name: JWT_AUDIENCE
+              value: cricket-ui
+            - name: CORS_ORIGINS
+              value: https://YOUR_UI_DOMAIN_HERE
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cricket-secrets
+                  key: ADMIN_USERNAME
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cricket-secrets
+                  key: ADMIN_PASSWORD
+            - name: LOG_LEVEL
+              value: INFO
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+

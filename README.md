@@ -80,6 +80,17 @@ npm run build    # Build for production
 npm run preview  # Preview production build
 ```
 
+### Local Postgres + FastAPI (Docker Compose)
+
+From repo root:
+
+```bash
+docker compose up --build
+```
+
+- API: `http://localhost:8000`
+- UI (dev): `http://localhost:3000`
+
 ## License
 
 MIT
