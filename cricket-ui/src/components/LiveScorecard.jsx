@@ -215,6 +215,17 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     return pins
   }, [deliveries, innings, overNum, prevOverBowler])
 
+  // Batters unavailable to come in: already dismissed or retired out this innings
+  const unavailableBatters = useMemo(() => {
+    const names = new Set([striker, nonStriker].filter(Boolean))
+    for (const d of deliveries) {
+      if (d.innings !== innings) continue
+      if (d.wicket?.outBatsman) names.add(d.wicket.outBatsman)
+      if (d.isRetirement && d.retirementType === 'Out') names.add(d.retiredBatter)
+    }
+    return names
+  }, [deliveries, innings, striker, nonStriker])
+
   const getBattingTeam = (n) => inningsBattingTeam(deliveries, n)
 
   const target = useMemo(
@@ -894,7 +905,14 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
             {/* Regular squad / manual entry */}
             {!canReturnBatters.some(rb => rb.name === newBatsmanInput) && (
-              <PlayerPicker names={batterNames} value={newBatsmanInput} onChange={setNewBatsmanInput} placeholder="Select batsman…" />
+              <PlayerPicker
+                names={batterNames.filter(n =>
+                  !unavailableBatters.has(n) && !canReturnBatters.some(rb => rb.name === n)
+                )}
+                value={newBatsmanInput}
+                onChange={setNewBatsmanInput}
+                placeholder="Select batsman…"
+              />
             )}
 
             <button className="sc-btn sc-btn--primary" onClick={confirmNewBatsman} disabled={!newBatsmanInput.trim()}>Send In</button>
