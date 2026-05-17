@@ -344,7 +344,14 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
     let newStriker = striker
     let newNonStriker = nonStriker
-    if (totalRuns % 2 === 1) [newStriker, newNonStriker] = [newNonStriker, newStriker]
+    // Penalty extras (the wide itself, the no-ball penalty) don't cause batters to cross.
+    // Only bat runs and genuine bye/leg-bye extras determine the swap.
+    const swapRuns = extraType === 'wide'
+      ? extraRuns - 1          // subtract the 1-run wide penalty; remaining are bye runs
+      : extraType === 'noball'
+      ? batRuns                // no-ball penalty doesn't count; only bat runs
+      : totalRuns              // byes, leg byes, normal — all runs count
+    if (swapRuns % 2 === 1) [newStriker, newNonStriker] = [newNonStriker, newStriker]
 
     if (wicket) {
       if (wicket.outBatsman === newStriker) newStriker = ''
