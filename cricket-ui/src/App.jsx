@@ -307,7 +307,7 @@ function App() {
           />
         )}
         {currentView === 'search' && (
-          <SearchMatches onLoadMatch={handleLoadMatch} />
+          <SearchMatches onLoadMatch={handleLoadMatch} session={session} />
         )}
         {currentView === 'live' && (
           <LiveScores />

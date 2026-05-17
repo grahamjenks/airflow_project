@@ -3,7 +3,7 @@ import { loadMatches, deleteMatch as deleteMatchFromStorage } from '../services/
 import { logger } from '../lib/logger'
 import './SearchMatches.css'
 
-function SearchMatches({ onLoadMatch }) {
+function SearchMatches({ onLoadMatch, session }) {
   const [matches, setMatches] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -191,13 +191,15 @@ function SearchMatches({ onLoadMatch }) {
                     >
                       Load
                     </button>
-                    <button
-                      onClick={() => deleteMatch(match.id)}
-                      className="action-button delete-button"
-                      title="Delete Match"
-                    >
-                      Delete
-                    </button>
+                    {session && (
+                      <button
+                        onClick={() => deleteMatch(match.id)}
+                        className="action-button delete-button"
+                        title="Delete Match"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
 
