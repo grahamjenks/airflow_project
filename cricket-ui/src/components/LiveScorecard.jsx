@@ -85,7 +85,7 @@ function Ball({ d }) {
 
 // ─── Dropdown or text fallback for player selection ───────────────────────────
 
-function PlayerPicker({ names, value, onChange, placeholder, className }) {
+function PlayerPicker({ names, value, onChange, placeholder, className, pinnedNames = [], disabledNames = [] }) {
   const [manual, setManual] = useState(false)
   useEffect(() => { setManual(false) }, [names])
 
@@ -101,6 +101,10 @@ function PlayerPicker({ names, value, onChange, placeholder, className }) {
       />
     )
   }
+
+  const pinnedSet = new Set(pinnedNames)
+  const disabledSet = new Set(disabledNames)
+
   return (
     <select
       className="sc-prompt__select"
@@ -112,7 +116,21 @@ function PlayerPicker({ names, value, onChange, placeholder, className }) {
       }}
     >
       <option value="">{placeholder}</option>
-      {names.map(n => <option key={n} value={n}>{n}</option>)}
+      {pinnedNames.length > 0 && (
+        <>
+          {pinnedNames.map(n => (
+            <option key={`pin-${n}`} value={n} disabled={disabledSet.has(n)}>
+              {n}{disabledSet.has(n) ? ' (prev over — cannot bowl)' : ' ↩ recent'}
+            </option>
+          ))}
+          <option disabled>──────────</option>
+        </>
+      )}
+      {names.filter(n => !pinnedSet.has(n)).map(n => (
+        <option key={n} value={n} disabled={disabledSet.has(n)}>
+          {n}{disabledSet.has(n) ? ' (prev over — cannot bowl)' : ''}
+        </option>
+      ))}
       <option disabled>──────────</option>
       <option value="__manual__">Other (type name)…</option>
     </select>
@@ -179,6 +197,23 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const nonStrikerStats = useMemo(() => getBatsmanStats(deliveries, innings, nonStriker), [deliveries, innings, nonStriker])
   const bowlerFigs = useMemo(() => getBowlerFigures(deliveries, innings, currentBowler), [deliveries, innings, currentBowler])
   const overBalls = useMemo(() => getOverBalls(deliveries, innings, overNum), [deliveries, innings, overNum])
+
+  // Bowler of the just-completed over (overNum is already incremented when newBowler prompt shows)
+  const prevOverBowler = useMemo(() => {
+    if (overNum === 0) return null
+    return deliveries.find(d => d.innings === innings && d.overNum === overNum - 1 && !d.isRetirement)?.bowler || null
+  }, [deliveries, innings, overNum])
+
+  // Last 2 distinct bowlers to show pinned at top of dropdown [secondPrev, prev]
+  const recentBowlerPins = useMemo(() => {
+    const pins = []
+    if (overNum > 1) {
+      const b = deliveries.find(d => d.innings === innings && d.overNum === overNum - 2 && !d.isRetirement)?.bowler || null
+      if (b && b !== prevOverBowler) pins.push(b)
+    }
+    if (prevOverBowler) pins.push(prevOverBowler)
+    return pins
+  }, [deliveries, innings, overNum, prevOverBowler])
 
   const getBattingTeam = (n) => inningsBattingTeam(deliveries, n)
 
@@ -459,7 +494,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
   const confirmNewBowler = () => {
     const name = newBowlerInput.trim()
-    if (!name) return
+    if (!name || name === prevOverBowler) return
     onChange({ deliveries, scorecardState: { ...scorecardState, currentBowler: name } })
     setNewBowlerInput('')
     setUiMode('normal')
@@ -869,8 +904,24 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'newBowler' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">Over {overNum + 1} — New Bowler</div>
-            <PlayerPicker names={bowlerNames} value={newBowlerInput} onChange={setNewBowlerInput} placeholder="Select bowler…" />
-            <button className="sc-btn sc-btn--primary" onClick={confirmNewBowler} disabled={!newBowlerInput.trim()}>Start Over</button>
+            {prevOverBowler && (
+              <div className="sc-prompt__note">{prevOverBowler} cannot bowl consecutive overs</div>
+            )}
+            <PlayerPicker
+              names={bowlerNames}
+              value={newBowlerInput}
+              onChange={setNewBowlerInput}
+              placeholder="Select bowler…"
+              pinnedNames={recentBowlerPins}
+              disabledNames={prevOverBowler ? [prevOverBowler] : []}
+            />
+            <button
+              className="sc-btn sc-btn--primary"
+              onClick={confirmNewBowler}
+              disabled={!newBowlerInput.trim() || newBowlerInput === prevOverBowler}
+            >
+              Start Over
+            </button>
           </div>
         )}
       </div>

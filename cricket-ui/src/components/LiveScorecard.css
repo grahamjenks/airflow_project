@@ -352,6 +352,65 @@
   border: 1px solid #e2e8f0;
 }
 
+.sc-btn--retire {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  background: #fffbeb;
+  color: #b7791f;
+  border: 1px solid #f6e05e;
+}
+
+.sc-btn--retire:hover:not(:disabled) { background: #fefcbf; }
+
+/* ── Returning batters prompt ──────────────────────────────────────────────── */
+.sc-prompt__returning {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sc-prompt__returning-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #d69e2e;
+}
+
+.sc-btn--returning {
+  flex: 1;
+  height: 44px;
+  padding: 0 0.75rem;
+  font-size: 0.9rem;
+  background: #fffbeb;
+  color: #b7791f;
+  border: 2px solid #f6e05e;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sc-btn--returning:hover { background: #fefcbf; }
+
+.sc-btn--returning-active {
+  background: #f6e05e !important;
+  color: #744210 !important;
+  border-color: #d69e2e !important;
+}
+
+/* ── Bowler restriction note ───────────────────────────────────────────────── */
+.sc-prompt__note {
+  font-size: 0.8rem;
+  color: #c05621;
+  background: #fffaf0;
+  border: 1px solid #fbd38d;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  text-align: center;
+}
+
 /* ── Prompts (wicket / new batsman / new bowler) ───────────────────────────── */
 .sc-prompt {
   display: flex;
