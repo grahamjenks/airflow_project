@@ -85,11 +85,16 @@ function Ball({ d }) {
 
 // ─── Dropdown or text fallback for player selection ───────────────────────────
 
-function PlayerPicker({ names, value, onChange, placeholder, className, pinnedNames = [], disabledNames = [] }) {
+// groups = [{ label, names }] enables <optgroup> layout; falls back to flat list when absent
+function PlayerPicker({ names = [], value, onChange, placeholder, className, pinnedNames = [], disabledNames = [], groups = null }) {
+  const namesKey = names.join('\x01')
   const [manual, setManual] = useState(false)
-  useEffect(() => { setManual(false) }, [names])
+  useEffect(() => { setManual(false) }, [namesKey])
 
-  if (!names.length || manual) {
+  const disabledSet = new Set(disabledNames)
+  const hasOptions = groups ? groups.some(g => g.names.length > 0) : names.length > 0
+
+  if (!hasOptions || manual) {
     return (
       <input
         type="text"
@@ -103,36 +108,50 @@ function PlayerPicker({ names, value, onChange, placeholder, className, pinnedNa
   }
 
   const pinnedSet = new Set(pinnedNames)
-  const disabledSet = new Set(disabledNames)
 
   return (
     <select
-      className="sc-prompt__select"
+      className={className || 'sc-prompt__select'}
       value={value}
-      autoFocus
       onChange={e => {
         if (e.target.value === '__manual__') { setManual(true); onChange('') }
         else onChange(e.target.value)
       }}
     >
-      <option value="">{placeholder}</option>
-      {pinnedNames.length > 0 && (
+      <option value="">{placeholder || 'Select…'}</option>
+      {groups ? (
+        groups.filter(g => g.names.length > 0).map(g => (
+          <optgroup key={g.label} label={g.label}>
+            {g.names.map(n => (
+              <option key={n} value={n} disabled={disabledSet.has(n)}>
+                {n}{disabledSet.has(n) ? ' — cannot bowl consecutive overs' : ''}
+              </option>
+            ))}
+          </optgroup>
+        ))
+      ) : (
         <>
-          {pinnedNames.map(n => (
-            <option key={`pin-${n}`} value={n} disabled={disabledSet.has(n)}>
-              {n}{disabledSet.has(n) ? ' (prev over — cannot bowl)' : ' ↩ recent'}
-            </option>
-          ))}
-          <option disabled>──────────</option>
+          {pinnedNames.length > 0 && (
+            <optgroup label="Recent">
+              {pinnedNames.map(n => (
+                <option key={`pin-${n}`} value={n} disabled={disabledSet.has(n)}>
+                  {n}{disabledSet.has(n) ? ' — cannot bowl consecutive overs' : ''}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label={pinnedNames.length > 0 ? 'All bowlers' : 'Squad'}>
+            {names.filter(n => !pinnedSet.has(n)).map(n => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </optgroup>
         </>
       )}
-      {names.filter(n => !pinnedSet.has(n)).map(n => (
-        <option key={n} value={n} disabled={disabledSet.has(n)}>
-          {n}{disabledSet.has(n) ? ' (prev over — cannot bowl)' : ''}
-        </option>
-      ))}
-      <option disabled>──────────</option>
-      <option value="__manual__">Other (type name)…</option>
+      <optgroup label="Not in squad?">
+        <option value="__manual__">Enter name manually…</option>
+      </optgroup>
     </select>
   )
 }
@@ -215,16 +234,38 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     return pins
   }, [deliveries, innings, overNum, prevOverBowler])
 
-  // Batters unavailable to come in: already dismissed or retired out this innings
+  // Bowlers grouped by role for the new-bowler picker
+  const bowlerGroups = useMemo(() => {
+    const sqd = squad[sqBowlingTeam] || []
+    if (!sqd.length) return null
+    const pinnedSet = new Set(recentBowlerPins)
+    const groups = []
+    if (recentBowlerPins.length > 0) groups.push({ label: 'Recent', names: recentBowlerPins })
+    const specialists = sqd.filter(p => (p.role === 'Bowler' || p.role === 'All-rounder') && !pinnedSet.has(p.name)).map(p => p.name)
+    const others = sqd.filter(p => p.role !== 'Bowler' && p.role !== 'All-rounder' && !pinnedSet.has(p.name)).map(p => p.name)
+    if (specialists.length) groups.push({ label: 'Bowlers & All-rounders', names: specialists })
+    if (others.length) groups.push({ label: 'Batters', names: others })
+    return groups.length ? groups : null
+  }, [squad, sqBowlingTeam, recentBowlerPins])
+
+  // Batters unavailable to come in: anyone who has appeared this innings, minus retired-hurt returners
   const unavailableBatters = useMemo(() => {
     const names = new Set([striker, nonStriker].filter(Boolean))
+    const retiredHurtSet = new Set(
+      retiredBatters.filter(rb => rb.innings === innings && rb.type === 'Hurt').map(rb => rb.name)
+    )
     for (const d of deliveries) {
       if (d.innings !== innings) continue
-      if (d.wicket?.outBatsman) names.add(d.wicket.outBatsman)
-      if (d.isRetirement && d.retirementType === 'Out') names.add(d.retiredBatter)
+      if (d.isRetirement) {
+        if (d.retirementType === 'Out') names.add(d.retiredBatter)
+      } else {
+        if (d.striker) names.add(d.striker)
+        if (d.nonStriker) names.add(d.nonStriker)
+      }
     }
+    for (const n of retiredHurtSet) names.delete(n)
     return names
-  }, [deliveries, innings, striker, nonStriker])
+  }, [deliveries, innings, striker, nonStriker, retiredBatters])
 
   const getBattingTeam = (n) => inningsBattingTeam(deliveries, n)
 
@@ -927,10 +968,10 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             )}
             <PlayerPicker
               names={bowlerNames}
+              groups={bowlerGroups}
               value={newBowlerInput}
               onChange={setNewBowlerInput}
               placeholder="Select bowler…"
-              pinnedNames={recentBowlerPins}
               disabledNames={prevOverBowler ? [prevOverBowler] : []}
             />
             <button

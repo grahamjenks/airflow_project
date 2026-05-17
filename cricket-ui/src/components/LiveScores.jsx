@@ -60,6 +60,152 @@ function buildWorm(deliveries) {
   return { rows, inningsNums }
 }
 
+// ─── Scorecard derivation ─────────────────────────────────────────────────────
+
+function buildScorecard(deliveries, innings) {
+  const batOrder = []
+  const batters = {}
+  const bowlers = {}
+  const overMap = {}
+
+  for (const d of (deliveries || [])) {
+    if (d.innings !== innings) continue
+
+    if (d.isRetirement) {
+      if (d.retiredBatter && batters[d.retiredBatter]) {
+        batters[d.retiredBatter].dismissal = d.retirementType === 'Hurt' ? 'Retired Hurt' : 'Retired Out'
+      }
+      continue
+    }
+
+    if (d.striker) {
+      if (!batters[d.striker]) { batOrder.push(d.striker); batters[d.striker] = { name: d.striker, runs: 0, balls: 0, fours: 0, sixes: 0, dismissal: 'not out', bowler: '', fielder: '' } }
+      const b = batters[d.striker]
+      if (d.extraType !== 'bye' && d.extraType !== 'legbye') b.runs += d.batRuns
+      if (d.batRuns === 4 && !d.extraType) b.fours++
+      if (d.batRuns === 6 && !d.extraType) b.sixes++
+      if (d.extraType !== 'wide') b.balls++
+      if (d.wicket?.outBatsman === d.striker) { b.dismissal = d.wicket.type; b.bowler = d.bowler || ''; b.fielder = d.wicket.fielder || '' }
+    }
+
+    if (d.nonStriker && !batters[d.nonStriker]) { batOrder.push(d.nonStriker); batters[d.nonStriker] = { name: d.nonStriker, runs: 0, balls: 0, fours: 0, sixes: 0, dismissal: 'not out', bowler: '', fielder: '' } }
+
+    if (d.wicket?.outBatsman && d.wicket.outBatsman !== d.striker && batters[d.wicket.outBatsman]) {
+      const nb = batters[d.wicket.outBatsman]
+      nb.dismissal = d.wicket.type; nb.bowler = d.bowler || ''; nb.fielder = d.wicket.fielder || ''
+    }
+
+    if (d.bowler) {
+      if (!bowlers[d.bowler]) bowlers[d.bowler] = { name: d.bowler, legalBalls: 0, runs: 0, wickets: 0, maidens: 0, wides: 0, noBalls: 0 }
+      const bwl = bowlers[d.bowler]
+      const charged = (d.extraType === 'bye' || d.extraType === 'legbye') ? 0 : d.batRuns + d.extraRuns
+      if (d.isLegalDelivery) bwl.legalBalls++
+      bwl.runs += charged
+      if (d.extraType === 'wide') bwl.wides++
+      if (d.extraType === 'noball') bwl.noBalls++
+      if (d.wicket && d.wicket.type !== 'Run Out' && d.wicket.type !== 'Retired Hurt') bwl.wickets++
+      const ok = `${d.bowler}:${d.overNum}`
+      if (!overMap[ok]) overMap[ok] = { bowler: d.bowler, balls: 0, runs: 0 }
+      if (d.isLegalDelivery) overMap[ok].balls++
+      overMap[ok].runs += charged
+    }
+  }
+
+  for (const ov of Object.values(overMap)) {
+    if (ov.balls === 6 && ov.runs === 0 && bowlers[ov.bowler]) bowlers[ov.bowler].maidens++
+  }
+
+  return { batters: batOrder.map(n => batters[n]), bowlers: Object.values(bowlers) }
+}
+
+function formatOvers(legalBalls) {
+  const ov = Math.floor(legalBalls / 6); const rem = legalBalls % 6
+  return rem ? `${ov}.${rem}` : String(ov)
+}
+
+function formatDismissal(b) {
+  if (b.dismissal === 'not out') return 'not out'
+  if (b.dismissal === 'Bowled') return `b ${b.bowler}`
+  if (b.dismissal === 'LBW') return `lbw b ${b.bowler}`
+  if (b.dismissal === 'Caught') return `c ${b.fielder ? b.fielder + ' ' : ''}b ${b.bowler}`.trim()
+  if (b.dismissal === 'Stumped') return `st ${b.fielder ? b.fielder + ' ' : ''}b ${b.bowler}`.trim()
+  if (b.dismissal === 'Hit Wicket') return `hit wkt b ${b.bowler}`
+  if (b.dismissal === 'Run Out') return `run out${b.fielder ? ` (${b.fielder})` : ''}`
+  if (b.dismissal === 'Retired Hurt') return 'ret hurt'
+  if (b.dismissal === 'Retired Out') return 'ret out'
+  return b.dismissal
+}
+
+// ─── Scorecard per innings ────────────────────────────────────────────────────
+
+function ScorecardInnings({ deliveries, innings, sc }) {
+  const { batters, bowlers } = buildScorecard(deliveries, innings)
+  if (!batters.length && !bowlers.length) return null
+  const bTeam = battingTeam(deliveries, innings)
+  const isCurrent = sc.innings === innings
+
+  return (
+    <div className="lsc-sc-innings">
+      <div className="lsc-sc-header">
+        <span className="lsc-sc-team">{bTeam}</span>
+        <span className="lsc-sc-label">{ORDINAL[innings - 1]} Innings</span>
+      </div>
+
+      {batters.length > 0 && (
+        <table className="lsc-sc-table">
+          <thead>
+            <tr>
+              <th className="lsc-sc-th--name">Batter</th>
+              <th className="lsc-sc-th--how"></th>
+              <th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {batters.map(b => (
+              <tr key={b.name} className={isCurrent && (b.name === sc.striker || b.name === sc.nonStriker) ? 'lsc-sc-tr--live' : ''}>
+                <td className="lsc-sc-td--name">
+                  {b.name}{isCurrent && b.name === sc.striker && <span className="lsc-sc-star"> ★</span>}
+                </td>
+                <td className="lsc-sc-td--how">{formatDismissal(b)}</td>
+                <td><strong>{b.runs}</strong></td>
+                <td className="lsc-sc-muted">{b.balls}</td>
+                <td className="lsc-sc-muted">{b.fours}</td>
+                <td className="lsc-sc-muted">{b.sixes}</td>
+                <td className="lsc-sc-muted">{b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(0) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {bowlers.length > 0 && (
+        <table className="lsc-sc-table lsc-sc-table--bowling">
+          <thead>
+            <tr>
+              <th className="lsc-sc-th--name">Bowler</th>
+              <th>O</th><th>M</th><th>R</th><th>W</th><th>Econ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bowlers.map(b => (
+              <tr key={b.name} className={isCurrent && b.name === sc.currentBowler ? 'lsc-sc-tr--live' : ''}>
+                <td className="lsc-sc-td--name">
+                  {b.name}{isCurrent && b.name === sc.currentBowler && <span className="lsc-sc-star"> ★</span>}
+                </td>
+                <td>{formatOvers(b.legalBalls)}</td>
+                <td className="lsc-sc-muted">{b.maidens}</td>
+                <td>{b.runs}</td>
+                <td><strong>{b.wickets}</strong></td>
+                <td className="lsc-sc-muted">{b.legalBalls > 0 ? (b.runs / (b.legalBalls / 6)).toFixed(2) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
 // ─── Worm chart ───────────────────────────────────────────────────────────────
 
 function WormChart({ deliveries, matchOvers }) {
