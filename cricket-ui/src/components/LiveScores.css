@@ -245,43 +245,74 @@
   color: #276749;
 }
 
-/* ── Live batting ── */
-.lsc-batting {
+/* ── Live stats bar ── */
+.lsc-live-stats {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.55rem 1.25rem;
-  font-size: 0.85rem;
   background: #f7fafc;
+  border-top: 1px solid #edf2f7;
+}
+
+.lsc-live-stats__batters {
+  display: flex;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
-.lsc-batting__batter {
+.lsc-live-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.lsc-live-stat__name {
+  font-size: 0.82rem;
   font-weight: 700;
   color: #2d3748;
 }
 
-.lsc-batting__batter--ns {
+.lsc-live-stat--ns .lsc-live-stat__name {
   font-weight: 400;
   color: #4a5568;
 }
 
-.lsc-batting__star {
+.lsc-live-stat__strike {
   color: #667eea;
-  font-size: 0.65rem;
+  font-weight: 700;
+  margin-left: 1px;
 }
 
-.lsc-batting__bowler {
-  margin-left: auto;
-  color: #718096;
-  font-size: 0.8rem;
+.lsc-live-stat__fig {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a202c;
 }
 
-.lsc-batting__stats {
+.lsc-live-stat__balls {
+  font-size: 0.75rem;
   font-weight: 400;
-  color: #667eea;
-  font-size: 0.78rem;
-  margin-left: 0.3rem;
+  color: #718096;
+}
+
+.lsc-live-stats__bowler {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.lsc-live-stats__bowler .lsc-live-stat__name {
+  font-weight: 400;
+  color: #718096;
+}
+
+.lsc-live-stat__fig--bowl {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4a5568;
 }
 
 /* ── Worm ── */
@@ -420,7 +451,7 @@
 @media (max-width: 480px) {
   .lsc-score__team { min-width: 90px; }
   .lsc-card__header { padding: 0.9rem 1rem 0.3rem; }
-  .lsc-scores, .lsc-batting, .lsc-target, .lsc-worm { padding-left: 1rem; padding-right: 1rem; }
+  .lsc-scores, .lsc-live-stats, .lsc-target, .lsc-worm { padding-left: 1rem; padding-right: 1rem; }
   .lsc-score--batting { margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
   .lsc-sc-innings { padding: 0.75rem 1rem 1rem; }
   .lsc-sc-td--how { display: none; }

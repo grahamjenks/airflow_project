@@ -376,30 +376,38 @@ function MatchCard({ match }) {
         </div>
       )}
 
-      {/* Live batsmen / bowler */}
+      {/* Live batters & bowler stats bar */}
       {sc.phase === 'scoring' && sc.striker && (
-        <div className="lsc-batting">
-          <span className="lsc-batting__batter">
-            {sc.striker} <span className="lsc-batting__star">★</span>
-            {strikerStats && (
-              <span className="lsc-batting__stats">{strikerStats.runs}({strikerStats.balls})</span>
+        <div className="lsc-live-stats">
+          <div className="lsc-live-stats__batters">
+            <div className="lsc-live-stat">
+              <span className="lsc-live-stat__name">{sc.striker}<span className="lsc-live-stat__strike">*</span></span>
+              {strikerStats && (
+                <span className="lsc-live-stat__fig">
+                  {strikerStats.runs}<span className="lsc-live-stat__balls">({strikerStats.balls})</span>
+                </span>
+              )}
+            </div>
+            {sc.nonStriker && (
+              <div className="lsc-live-stat lsc-live-stat--ns">
+                <span className="lsc-live-stat__name">{sc.nonStriker}</span>
+                {nsStats && (
+                  <span className="lsc-live-stat__fig">
+                    {nsStats.runs}<span className="lsc-live-stat__balls">({nsStats.balls})</span>
+                  </span>
+                )}
+              </div>
             )}
-          </span>
-          {sc.nonStriker && (
-            <span className="lsc-batting__batter lsc-batting__batter--ns">
-              {sc.nonStriker}
-              {nsStats && (
-                <span className="lsc-batting__stats"> {nsStats.runs}({nsStats.balls})</span>
-              )}
-            </span>
-          )}
+          </div>
           {sc.currentBowler && (
-            <span className="lsc-batting__bowler">
-              {sc.currentBowler}
+            <div className="lsc-live-stats__bowler">
+              <span className="lsc-live-stat__name">{sc.currentBowler}</span>
               {bwlStats && (
-                <span className="lsc-batting__stats"> {formatOvers(bwlStats.legalBalls)}-{bwlStats.runs}-{bwlStats.wickets}</span>
+                <span className="lsc-live-stat__fig lsc-live-stat__fig--bowl">
+                  {formatOvers(bwlStats.legalBalls)}-{bwlStats.runs}-{bwlStats.wickets}
+                </span>
               )}
-            </span>
+            </div>
           )}
         </div>
       )}
