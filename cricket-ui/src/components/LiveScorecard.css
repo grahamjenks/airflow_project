@@ -44,6 +44,68 @@
   margin-top: 0.35rem;
 }
 
+.sc-board__prev {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+/* Target strip (chasing innings) */
+.sc-board__target {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255,255,255,0.12);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sc-board__target--won {
+  background: rgba(72,187,120,0.25);
+  color: #c6f6d5;
+  font-size: 1rem;
+}
+
+/* Lead/deficit strip (intermediate Test innings) */
+.sc-board__lead {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+}
+
+.sc-setup__prev-scores { margin-bottom: 1.25rem; }
+
+/* Player select in setup form */
+.sc-setup__input {
+  padding: 0.65rem 0.9rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.sc-setup__input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+}
+
 /* ── Batsmen ───────────────────────────────────────────────────────────────── */
 .sc-batsmen {
   display: grid;
@@ -385,6 +447,67 @@
 }
 
 .sc-break__note { color: #718096; font-size: 0.9rem; margin-top: 1rem; }
+
+.sc-break__result {
+  background: linear-gradient(135deg, #276749 0%, #2f855a 100%);
+  color: white;
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Player select in prompts */
+.sc-prompt__select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+}
+
+.sc-prompt__select:focus {
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.25);
+}
+
+.sc-break__inns-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #a0aec0;
+}
+
+.sc-break__followon {
+  background: #fffbeb;
+  border: 1px solid #f6e05e;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #744210;
+  text-align: center;
+}
+
+.sc-btn--followon {
+  width: 100%;
+  height: 48px;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.sc-btn--followon:hover { opacity: 0.9; }
 
 /* ── Over history ──────────────────────────────────────────────────────────── */
 .sc-history {

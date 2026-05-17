@@ -1,7 +1,15 @@
 import { useState } from 'react'
+import { isSupabaseConfigured } from '../lib/supabase'
 import './MatchDetails.css'
 
-function MatchDetails({ onSubmit, matchData, teams = [] }) {
+const FORMAT_BY_MATCH_TYPE = {
+  'Test':        { format: 'Test', overs: 90 },
+  'First Class': { format: 'Test', overs: 90 },
+  'ODI':         { format: 'ODI',  overs: 50 },
+  'T20':         { format: 'T20',  overs: 20 },
+}
+
+function MatchDetails({ onSubmit, matchData, teams = [], session }) {
   const [formData, setFormData] = useState(matchData || {
     matchType: '',
     team1: '',
@@ -16,8 +24,46 @@ function MatchDetails({ onSubmit, matchData, teams = [] }) {
     tossDecision: '',
   })
 
+  // If Supabase is active and the user is signed in but has no teams, block match creation
+  if (isSupabaseConfigured() && session && teams.length === 0) {
+    return (
+      <div className="match-details">
+        <h2>Match Information</h2>
+        <div className="no-teams-prompt">
+          <div className="no-teams-prompt__icon">🏏</div>
+          <h3>Set up your teams first</h3>
+          <p>You need at least two teams (with squads) before you can record a match.</p>
+          <p>Go to the <strong>Teams</strong> tab to add teams and players.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const formatOptions = () => {
+    switch (formData.matchType) {
+      case 'Test':
+      case 'First Class': return [{ value: 'Test', label: 'Test (Unlimited)' }]
+      case 'ODI':         return [{ value: 'ODI',  label: 'ODI (50 overs)'  }]
+      case 'T20':         return [{ value: 'T20',  label: 'T20 (20 overs)'  }]
+      default: return [
+        { value: 'T20',  label: 'T20 (20 overs)'  },
+        { value: 'ODI',  label: 'ODI (50 overs)'  },
+        { value: 'Test', label: 'Test (Unlimited)' },
+      ]
+    }
+  }
+
   const handleChange = (e) => {
     const { name, value } = e.target
+    if (name === 'matchType') {
+      const mapped = FORMAT_BY_MATCH_TYPE[value]
+      setFormData(prev => ({
+        ...prev,
+        matchType: value,
+        ...(mapped ? { format: mapped.format, overs: mapped.overs } : {}),
+      }))
+      return
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value,
@@ -25,7 +71,6 @@ function MatchDetails({ onSubmit, matchData, teams = [] }) {
     }))
   }
 
-  // When a team is chosen from the dropdown, store both name and id
   const handleTeamSelect = (slot, teamId) => {
     const team = teams.find(t => t.id === teamId)
     setFormData(prev => ({
@@ -43,8 +88,8 @@ function MatchDetails({ onSubmit, matchData, teams = [] }) {
   const hasTeams = teams.length > 0
 
   const TeamInput = ({ slot, label }) => {
-    const nameField = slot          // 'team1' or 'team2'
-    const idField = `${slot}Id`     // 'team1Id' or 'team2Id'
+    const nameField = slot
+    const idField = `${slot}Id`
 
     if (hasTeams) {
       return (
@@ -113,11 +158,12 @@ function MatchDetails({ onSubmit, matchData, teams = [] }) {
               name="format"
               value={formData.format}
               onChange={handleChange}
+              disabled={formData.matchType in FORMAT_BY_MATCH_TYPE}
               required
             >
-              <option value="T20">T20 (20 overs)</option>
-              <option value="ODI">ODI (50 overs)</option>
-              <option value="Test">Test (Unlimited)</option>
+              {formatOptions().map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
           </div>
         </div>

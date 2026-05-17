@@ -3,6 +3,8 @@ import './LiveScorecard.css'
 
 const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket', 'Retired Hurt']
 
+const ordinal = n => ['1st', '2nd', '3rd', '4th'][n - 1] || `${n}th`
+
 // ─── Pure stat derivations ────────────────────────────────────────────────────
 
 function computeScore(deliveries, innings) {
@@ -10,13 +12,7 @@ function computeScore(deliveries, innings) {
   const runs = inns.reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
   const wickets = inns.filter(d => d.wicket).length
   const legalBalls = inns.filter(d => d.isLegalDelivery).length
-  return {
-    runs,
-    wickets,
-    overs: Math.floor(legalBalls / 6),
-    balls: legalBalls % 6,
-    legalBalls,
-  }
+  return { runs, wickets, overs: Math.floor(legalBalls / 6), balls: legalBalls % 6, legalBalls }
 }
 
 function getBatsmanStats(deliveries, innings, name) {
@@ -26,9 +22,11 @@ function getBatsmanStats(deliveries, innings, name) {
   const runs = faced.reduce(
     (s, d) => (d.extraType === 'bye' || d.extraType === 'legbye' ? s : s + d.batRuns), 0
   )
-  const fours = faced.filter(d => d.batRuns === 4 && !d.extraType).length
-  const sixes = faced.filter(d => d.batRuns === 6 && !d.extraType).length
-  return { runs, balls: faced.length, fours, sixes }
+  return {
+    runs, balls: faced.length,
+    fours: faced.filter(d => d.batRuns === 4 && !d.extraType).length,
+    sixes: faced.filter(d => d.batRuns === 6 && !d.extraType).length,
+  }
 }
 
 function getBowlerFigures(deliveries, innings, name) {
@@ -43,9 +41,7 @@ function getBowlerFigures(deliveries, innings, name) {
   const overs = Math.floor(legalBalls / 6)
   const rem = legalBalls % 6
   return {
-    overs: rem ? `${overs}.${rem}` : String(overs),
-    runs,
-    wickets,
+    overs: rem ? `${overs}.${rem}` : String(overs), runs, wickets,
     wides: mine.filter(d => d.extraType === 'wide').length,
     noBalls: mine.filter(d => d.extraType === 'noball').length,
   }
@@ -53,6 +49,26 @@ function getBowlerFigures(deliveries, innings, name) {
 
 function getOverBalls(deliveries, innings, overNum) {
   return deliveries.filter(d => d.innings === innings && d.overNum === overNum)
+}
+
+// Returns the batting team for innings number n
+function inningsBattingTeam(deliveries, n) {
+  return deliveries.find(d => d.innings === n)?.battingTeam || ''
+}
+
+// Returns the score the current batting team needs to reach to WIN this innings.
+// Accounts for their previous innings (e.g. Test match where team batted innings 1 already).
+// Returns null when not applicable (innings 1).
+function computeTarget(deliveries, currentInnings, currentBattingTeam) {
+  if (currentInnings < 2) return null
+  let opposing = 0, own = 0
+  for (let n = 1; n < currentInnings; n++) {
+    const s = computeScore(deliveries, n)
+    const bt = inningsBattingTeam(deliveries, n)
+    if (bt === currentBattingTeam) own += s.runs
+    else opposing += s.runs
+  }
+  return opposing - own + 1 // positive = runs needed; ≤0 = already leads (chasing team has already won)
 }
 
 // ─── Ball icon ────────────────────────────────────────────────────────────────
@@ -70,28 +86,79 @@ function Ball({ d }) {
   return <span className="sc-ball">{d.batRuns}</span>
 }
 
+// ─── Dropdown or text input for player selection ──────────────────────────────
+
+function PlayerPicker({ names, value, onChange, placeholder, className }) {
+  const [manual, setManual] = useState(false)
+
+  useEffect(() => { setManual(false) }, [names]) // reset when squad changes
+
+  if (!names.length || manual) {
+    return (
+      <input
+        type="text"
+        className={className || 'sc-prompt__input'}
+        value={value}
+        placeholder={placeholder}
+        autoFocus
+        onChange={e => onChange(e.target.value)}
+      />
+    )
+  }
+
+  return (
+    <select
+      className="sc-prompt__select"
+      value={value}
+      autoFocus
+      onChange={e => {
+        if (e.target.value === '__manual__') { setManual(true); onChange('') }
+        else onChange(e.target.value)
+      }}
+    >
+      <option value="">{placeholder}</option>
+      {names.map(n => <option key={n} value={n}>{n}</option>)}
+      <option disabled>──────────</option>
+      <option value="__manual__">Other (type name)…</option>
+    </select>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const DEFAULT_WICKET_FORM = { type: 'Bowled', fielder: '', outBatsman: '' }
 
-// squad shape: { [teamName]: [{name, role}] }
 export default function LiveScorecard({ matchData, deliveries, scorecardState, onChange, squad = {} }) {
   const {
     phase, innings, battingTeam, bowlingTeam,
     striker, nonStriker, currentBowler, overNum, legalBallsInOver,
+    followOnTaken, matchResult,
   } = scorecardState
 
-  // Derive squad lists from the passed squad prop for autocomplete
-  const currentBattingTeam = battingTeam || setupForm.battingTeam
-  const currentBowlingTeam = bowlingTeam || (
-    currentBattingTeam === matchData?.team1 ? matchData?.team2 : matchData?.team1
-  )
-  const batterNames = (squad[currentBattingTeam] || []).map(p => p.name)
-  const bowlerNames = (squad[currentBowlingTeam] || [])
-    .filter(p => p.role !== 'Batsman')
+  // Format config
+  const isTestFormat = matchData?.format === 'Test' || matchData?.matchType === 'Test' || matchData?.matchType === 'First Class'
+  const maxOvers = isTestFormat ? Infinity : (matchData?.overs || 20)
+  const maxInnings = isTestFormat ? 4 : 2
+  const followOnThreshold = matchData?.matchType === 'First Class' ? 150 : 200
+
+  // Local state — must precede squad derivation that uses setupForm
+  const [setupForm, setSetupForm] = useState({
+    battingTeam: matchData?.team1 || '',
+    striker: '', nonStriker: '', bowler: '',
+  })
+
+  // Squad lists derived from squad prop (phase-aware)
+  const sqBattingTeam = battingTeam || setupForm.battingTeam
+  const sqBowlingTeam = bowlingTeam || (sqBattingTeam === matchData?.team1 ? matchData?.team2 : matchData?.team1)
+  const batterNames = (squad[sqBattingTeam] || []).map(p => p.name)
+  const bowlerNames = (squad[sqBowlingTeam] || [])
+    .slice()
+    .sort((a, b) => {
+      const priority = r => (r === 'Bowler' || r === 'All-rounder' ? 0 : 1)
+      return priority(a.role) - priority(b.role)
+    })
     .map(p => p.name)
 
-  // Derive initial uiMode from state (handles page refresh mid-prompt)
   const [uiMode, setUiMode] = useState(() => {
     if (phase === 'scoring') {
       if (!striker || !nonStriker) return 'newBatsman'
@@ -100,7 +167,6 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     return 'normal'
   })
 
-  // Sync uiMode when scorecardState arrives from a load
   useEffect(() => {
     if (phase === 'scoring') {
       if (!striker || !nonStriker) { setUiMode('newBatsman'); return }
@@ -108,28 +174,48 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     }
   }, [phase, striker, nonStriker, currentBowler])
 
-  const [pendingExtra, setPendingExtra] = useState(null) // 'bye' | 'legbye'
+  const [pendingExtra, setPendingExtra] = useState(null)
   const [wicketForm, setWicketForm] = useState(DEFAULT_WICKET_FORM)
   const [newBatsmanInput, setNewBatsmanInput] = useState('')
   const [newBowlerInput, setNewBowlerInput] = useState('')
   const [needBowlerAfterBatsman, setNeedBowlerAfterBatsman] = useState(false)
 
-  const [setupForm, setSetupForm] = useState({
-    battingTeam: matchData?.team1 || '',
-    striker: '',
-    nonStriker: '',
-    bowler: '',
-  })
-
   // Live computed values
   const score = useMemo(() => computeScore(deliveries, innings), [deliveries, innings])
-  const score1 = useMemo(() => computeScore(deliveries, 1), [deliveries])
   const strikerStats = useMemo(() => getBatsmanStats(deliveries, innings, striker), [deliveries, innings, striker])
   const nonStrikerStats = useMemo(() => getBatsmanStats(deliveries, innings, nonStriker), [deliveries, innings, nonStriker])
   const bowlerFigs = useMemo(() => getBowlerFigures(deliveries, innings, currentBowler), [deliveries, innings, currentBowler])
   const overBalls = useMemo(() => getOverBalls(deliveries, innings, overNum), [deliveries, innings, overNum])
 
-  // ─── Setup ─────────────────────────────────────────────────────────────────
+  // Convenience wrapper using component's deliveries prop
+  const getBattingTeam = (n) => inningsBattingTeam(deliveries, n)
+
+  // Target / match situation
+  const target = useMemo(
+    () => computeTarget(deliveries, innings, battingTeam),
+    [deliveries, innings, battingTeam]
+  )
+  const required = target !== null ? target - score.runs : null // runs still needed to win
+  const ballsRemaining = !isTestFormat ? maxOvers * 6 - score.legalBalls : null
+  const rrr = (required !== null && required > 0 && ballsRemaining !== null && ballsRemaining > 0)
+    ? ((required / ballsRemaining) * 6).toFixed(2) : null
+
+  // Show target info: only in the final innings or limited-overs innings 2
+  const isChasingInnings = innings === maxInnings
+
+  // Determine next innings batting/bowling teams
+  const getNextInningsTeams = (nextInnings, followOn) => {
+    const team1 = getBattingTeam(1) || matchData?.team1 || ''
+    const team2 = getBattingTeam(2) || (team1 === matchData?.team1 ? matchData?.team2 : matchData?.team1) || ''
+    if (followOn) return { batting: team2, bowling: team1 }
+    const normalOrder = [team1, team2, team1, team2]
+    const followOnOrder = [team1, team2, team2, team1]
+    const order = followOnTaken ? followOnOrder : normalOrder
+    const batting = order[nextInnings - 1] || team1
+    return { batting, bowling: batting === team1 ? team2 : team1 }
+  }
+
+  // ─── Setup ───────────────────────────────────────────────────────────────────
 
   const submitSetup = (e) => {
     e.preventDefault()
@@ -144,14 +230,13 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         striker: setupForm.striker.trim(),
         nonStriker: setupForm.nonStriker.trim(),
         currentBowler: setupForm.bowler.trim(),
-        overNum: 0,
-        legalBallsInOver: 0,
+        overNum: 0, legalBallsInOver: 0,
       },
     })
     setUiMode('normal')
   }
 
-  // ─── Core delivery recording ────────────────────────────────────────────────
+  // ─── Core delivery recording ──────────────────────────────────────────────────
 
   const recordDelivery = ({ batRuns = 0, extraRuns = 0, extraType = null, wicket = null }) => {
     const isLegal = extraType !== 'wide' && extraType !== 'noball'
@@ -160,23 +245,35 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     const delivery = {
       innings, overNum, bowler: currentBowler,
       striker, nonStriker, battingTeam, bowlingTeam,
-      batRuns, extraRuns, extraType, totalRuns,
-      isLegalDelivery: isLegal,
-      wicket,
+      batRuns, extraRuns, extraType, totalRuns, isLegalDelivery: isLegal, wicket,
     }
 
     const newDeliveries = [...deliveries, delivery]
+    const newScore = computeScore(newDeliveries, innings)
 
-    // Strike rotation: odd runs → swap
+    // ── Win by runs/wickets in chasing innings ────────────────────────────────
+    if (isChasingInnings && target !== null) {
+      const wicketsInInnings = newDeliveries.filter(d => d.innings === innings && d.wicket).length
+      const wicketsRemaining = 10 - wicketsInInnings
+      if (newScore.runs >= target) {
+        const result = `${battingTeam} won by ${wicketsRemaining} wicket${wicketsRemaining !== 1 ? 's' : ''}`
+        onChange({
+          deliveries: newDeliveries,
+          scorecardState: { ...scorecardState, phase: 'ended', matchResult: result },
+        })
+        setUiMode('normal')
+        return
+      }
+    }
+
+    // Strike rotation
     let newStriker = striker
     let newNonStriker = nonStriker
     if (totalRuns % 2 === 1) [newStriker, newNonStriker] = [newNonStriker, newStriker]
 
-    // Wicket: vacate dismissed batsman's slot
-    let batsmanOut = null
+    // Wicket: vacate slot
     if (wicket) {
-      batsmanOut = wicket.outBatsman
-      if (batsmanOut === newStriker) newStriker = ''
+      if (wicket.outBatsman === newStriker) newStriker = ''
       else newNonStriker = ''
     }
 
@@ -190,36 +287,77 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         overComplete = true
         newLegal = 0
         newOverNum = overNum + 1
-        // End-of-over swap
         ;[newStriker, newNonStriker] = [newNonStriker, newStriker]
       }
     }
 
-    // Check for innings end (10 wickets)
+    // ── Innings end: all out or overs exhausted ───────────────────────────────
     const totalWickets = newDeliveries.filter(d => d.innings === innings && d.wicket).length
-    if (totalWickets >= 10) {
-      const newPhase = innings === 1 ? 'inningsBreak' : 'ended'
+    const oversExhausted = !isTestFormat && newOverNum >= maxOvers
+
+    if (totalWickets >= 10 || oversExhausted) {
+      // Win by innings check (Test only: innings 3, follow-on taken, follow-on team still behind)
+      if (isTestFormat && innings === 3 && followOnTaken) {
+        const s1 = computeScore(newDeliveries, 1)
+        const s2 = computeScore(newDeliveries, 2)
+        const s3 = computeScore(newDeliveries, 3)
+        const team1 = inningsBattingTeam(newDeliveries, 1)
+        const team2Total = s2.runs + s3.runs
+        if (team2Total < s1.runs) {
+          const margin = s1.runs - team2Total
+          onChange({
+            deliveries: newDeliveries,
+            scorecardState: {
+              ...scorecardState,
+              striker: newStriker, nonStriker: newNonStriker,
+              overNum: newOverNum, legalBallsInOver: newLegal,
+              phase: 'ended',
+              matchResult: `${team1} won by an innings and ${margin} run${margin !== 1 ? 's' : ''}`,
+            },
+          })
+          setUiMode('normal')
+          return
+        }
+      }
+
+      // Win/loss by runs in final innings
+      if (innings >= maxInnings) {
+        const tgt = computeTarget(newDeliveries, innings, battingTeam)
+        const shortfall = tgt !== null ? tgt - 1 - newScore.runs : 0
+        const result = shortfall > 0
+          ? `${bowlingTeam} won by ${shortfall} run${shortfall !== 1 ? 's' : ''}`
+          : `${battingTeam} won` // shouldn't reach here (caught above by win-by-wickets)
+        onChange({
+          deliveries: newDeliveries,
+          scorecardState: {
+            ...scorecardState,
+            striker: newStriker, nonStriker: newNonStriker,
+            overNum: newOverNum, legalBallsInOver: newLegal,
+            phase: 'ended', matchResult: result,
+          },
+        })
+        setUiMode('normal')
+        return
+      }
+
       onChange({
         deliveries: newDeliveries,
         scorecardState: {
-          ...scorecardState, striker: newStriker, nonStriker: newNonStriker,
-          overNum: newOverNum, legalBallsInOver: newLegal, phase: newPhase,
+          ...scorecardState,
+          striker: newStriker, nonStriker: newNonStriker,
+          overNum: newOverNum, legalBallsInOver: newLegal,
+          phase: 'inningsBreak',
         },
       })
       setUiMode('normal')
       return
     }
 
-    const newState = {
-      ...scorecardState,
-      striker: newStriker,
-      nonStriker: newNonStriker,
-      overNum: newOverNum,
-      legalBallsInOver: newLegal,
-    }
-    onChange({ deliveries: newDeliveries, scorecardState: newState })
+    onChange({
+      deliveries: newDeliveries,
+      scorecardState: { ...scorecardState, striker: newStriker, nonStriker: newNonStriker, overNum: newOverNum, legalBallsInOver: newLegal },
+    })
 
-    // Prompt chain: batsman first, then bowler (if over also ended)
     if (wicket) {
       setNeedBowlerAfterBatsman(overComplete)
       setNewBatsmanInput('')
@@ -236,20 +374,15 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     if (!deliveries.length) return
     const prev = deliveries[deliveries.length - 1]
     if (prev.innings !== innings) return
-
     const trimmed = deliveries.slice(0, -1)
-    const innsD = trimmed.filter(d => d.innings === innings)
-    const legalTotal = innsD.filter(d => d.isLegalDelivery).length
-
+    const legalTotal = trimmed.filter(d => d.innings === innings && d.isLegalDelivery).length
     onChange({
       deliveries: trimmed,
       scorecardState: {
         ...scorecardState,
-        striker: prev.striker,
-        nonStriker: prev.nonStriker,
+        striker: prev.striker, nonStriker: prev.nonStriker,
         currentBowler: prev.bowler,
-        overNum: Math.floor(legalTotal / 6),
-        legalBallsInOver: legalTotal % 6,
+        overNum: Math.floor(legalTotal / 6), legalBallsInOver: legalTotal % 6,
       },
     })
     setUiMode('normal')
@@ -264,6 +397,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
       deliveries,
       scorecardState: { ...scorecardState, striker: newSt, nonStriker: newSt === name ? newNst : name },
     })
+    setNewBatsmanInput('')
     if (needBowlerAfterBatsman) {
       setNeedBowlerAfterBatsman(false)
       setNewBowlerInput('')
@@ -281,39 +415,83 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     setUiMode('normal')
   }
 
-  const startSecondInnings = () => {
-    setSetupForm({ battingTeam: bowlingTeam, striker: '', nonStriker: '', bowler: '' })
+  const handleEndInnings = () => {
+    // Check win-by-innings when manually ending innings 3 with follow-on
+    if (isTestFormat && innings === 3 && followOnTaken) {
+      const s1 = computeScore(deliveries, 1)
+      const s2 = computeScore(deliveries, 2)
+      const s3 = computeScore(deliveries, 3)
+      const team1 = getBattingTeam(1)
+      const team2Total = s2.runs + s3.runs
+      if (team2Total < s1.runs) {
+        const margin = s1.runs - team2Total
+        onChange({
+          deliveries,
+          scorecardState: {
+            ...scorecardState, phase: 'ended',
+            matchResult: `${team1} won by an innings and ${margin} run${margin !== 1 ? 's' : ''}`,
+          },
+        })
+        return
+      }
+    }
+    const newPhase = innings >= maxInnings ? 'ended' : 'inningsBreak'
+    onChange({ deliveries, scorecardState: { ...scorecardState, phase: newPhase, matchResult: newPhase === 'ended' ? 'Match ended' : '' } })
+  }
+
+  const startNextInnings = (followOn = false) => {
+    const nextInnings = innings + 1
+    const { batting, bowling } = getNextInningsTeams(nextInnings, followOn)
+    setSetupForm({ battingTeam: batting, striker: '', nonStriker: '', bowler: '' })
     onChange({
       deliveries,
       scorecardState: {
         ...scorecardState,
-        phase: 'setup',
-        innings: 2,
-        battingTeam: bowlingTeam,
-        bowlingTeam: battingTeam,
+        phase: 'setup', innings: nextInnings,
+        battingTeam: batting, bowlingTeam: bowling,
         striker: '', nonStriker: '', currentBowler: '',
         overNum: 0, legalBallsInOver: 0,
+        followOnTaken: followOn || (followOnTaken || false),
+        matchResult: '',
       },
     })
     setUiMode('normal')
   }
 
   const endMatch = () => {
-    onChange({ deliveries, scorecardState: { ...scorecardState, phase: 'ended' } })
+    onChange({ deliveries, scorecardState: { ...scorecardState, phase: 'ended', matchResult: matchResult || 'Match ended' } })
   }
 
-  // ─── Setup phase ────────────────────────────────────────────────────────────
+  // ─── Setup phase ──────────────────────────────────────────────────────────────
 
   if (phase === 'setup') {
     const teams = [matchData?.team1, matchData?.team2].filter(Boolean)
-    const inningsNum = innings === 2 ? '2nd' : '1st'
+    // For setup form, use the selected batting team to determine squad lists
+    const setupBattingTeam = setupForm.battingTeam
+    const setupBowlingTeam = setupBattingTeam === matchData?.team1 ? matchData?.team2 : matchData?.team1
+    const setupBatterNames = (squad[setupBattingTeam] || []).map(p => p.name)
+    const setupBowlerNames = (squad[setupBowlingTeam] || [])
+      .slice()
+      .sort((a, b) => {
+        const priority = r => (r === 'Bowler' || r === 'All-rounder' ? 0 : 1)
+        return priority(a.role) - priority(b.role)
+      })
+      .map(p => p.name)
+
     return (
       <div className="sc-setup">
-        <h2>{inningsNum} Innings Setup</h2>
-        {innings === 2 && (
-          <div className="sc-setup__innings1">
-            1st Innings: <strong>{score1.runs}/{score1.wickets}</strong>
-            &nbsp;({score1.overs}.{score1.balls} ov)
+        <h2>{ordinal(innings)} Innings Setup</h2>
+        {innings > 1 && (
+          <div className="sc-setup__prev-scores">
+            {Array.from({ length: innings - 1 }, (_, i) => i + 1).map(n => {
+              const s = computeScore(deliveries, n)
+              if (!s.legalBalls) return null
+              return (
+                <div key={n} className="sc-setup__innings1">
+                  Innings {n} — {getBattingTeam(n)}: <strong>{s.runs}/{s.wickets}</strong> ({s.overs}.{s.balls} ov)
+                </div>
+              )
+            })}
           </div>
         )}
         <form onSubmit={submitSetup} className="sc-setup__form">
@@ -321,109 +499,185 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             <label>Batting Team</label>
             <select
               value={setupForm.battingTeam}
-              onChange={e => setSetupForm(f => ({ ...f, battingTeam: e.target.value }))}
+              onChange={e => setSetupForm(f => ({ ...f, battingTeam: e.target.value, striker: '', nonStriker: '', bowler: '' }))}
               required
             >
               {teams.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          {batterNames.length > 0 && <datalist id="dl-batters">{batterNames.map(n => <option key={n} value={n} />)}</datalist>}
-          {bowlerNames.length > 0 && <datalist id="dl-bowlers">{bowlerNames.map(n => <option key={n} value={n} />)}</datalist>}
-
           <div className="form-group">
             <label>Opener (on strike)</label>
-            <input
-              type="text" value={setupForm.striker} required
-              placeholder="Batsman name"
-              list={batterNames.length > 0 ? 'dl-batters' : undefined}
-              onChange={e => setSetupForm(f => ({ ...f, striker: e.target.value }))}
+            <PlayerPicker
+              names={setupBatterNames}
+              value={setupForm.striker}
+              onChange={v => setSetupForm(f => ({ ...f, striker: v }))}
+              placeholder="Select opener…"
+              className="sc-setup__input"
             />
           </div>
           <div className="form-group">
             <label>Opener (non-strike)</label>
-            <input
-              type="text" value={setupForm.nonStriker} required
-              placeholder="Batsman name"
-              list={batterNames.length > 0 ? 'dl-batters' : undefined}
-              onChange={e => setSetupForm(f => ({ ...f, nonStriker: e.target.value }))}
+            <PlayerPicker
+              names={setupBatterNames}
+              value={setupForm.nonStriker}
+              onChange={v => setSetupForm(f => ({ ...f, nonStriker: v }))}
+              placeholder="Select opener…"
+              className="sc-setup__input"
             />
           </div>
           <div className="form-group">
             <label>Opening Bowler</label>
-            <input
-              type="text" value={setupForm.bowler} required
-              placeholder="Bowler name"
-              list={bowlerNames.length > 0 ? 'dl-bowlers' : undefined}
-              onChange={e => setSetupForm(f => ({ ...f, bowler: e.target.value }))}
+            <PlayerPicker
+              names={setupBowlerNames}
+              value={setupForm.bowler}
+              onChange={v => setSetupForm(f => ({ ...f, bowler: v }))}
+              placeholder="Select bowler…"
+              className="sc-setup__input"
             />
           </div>
-          <button type="submit" className="sc-btn sc-btn--primary">Start Innings</button>
+          <button
+            type="submit"
+            className="sc-btn sc-btn--primary"
+            disabled={!setupForm.striker.trim() || !setupForm.nonStriker.trim() || !setupForm.bowler.trim()}
+          >
+            Start Innings
+          </button>
         </form>
       </div>
     )
   }
 
-  // ─── Innings break ──────────────────────────────────────────────────────────
+  // ─── Innings break ────────────────────────────────────────────────────────────
 
   if (phase === 'inningsBreak') {
+    const nextInnings = innings + 1
+    const isLastInnings = innings >= maxInnings
+
+    const playedScores = Array.from({ length: innings }, (_, i) => i + 1).map(n => ({
+      n, team: getBattingTeam(n), score: computeScore(deliveries, n),
+    }))
+
+    const canOfferFollowOn = isTestFormat && innings === 2
+    const s1 = computeScore(deliveries, 1)
+    const s2 = computeScore(deliveries, 2)
+    const deficit = s1.runs - s2.runs
+    const followOnEligible = canOfferFollowOn && deficit >= followOnThreshold
+
     return (
       <div className="sc-break">
-        <h2>Innings Break</h2>
-        <div className="sc-break__score">
-          <span>{deliveries.find(d => d.innings === 1)?.battingTeam}</span>
-          <span className="sc-break__runs">{score1.runs}/{score1.wickets}</span>
-          <span className="sc-break__overs">({score1.overs}.{score1.balls} ov)</span>
-        </div>
+        <h2>Innings {innings} Complete</h2>
+        {playedScores.map(({ n, team, score: s }) => (
+          <div key={n} className="sc-break__score">
+            <span>{team} <span className="sc-break__inns-label">({ordinal(n)} inn)</span></span>
+            <span className="sc-break__runs">{s.runs}/{s.wickets}</span>
+            <span className="sc-break__overs">({s.overs}.{s.balls} ov)</span>
+          </div>
+        ))}
+        {followOnEligible && (
+          <div className="sc-break__followon">
+            Follow-on available — {getBattingTeam(1)} lead by {deficit} runs (threshold: {followOnThreshold})
+          </div>
+        )}
         <div className="sc-break__actions">
-          <button className="sc-btn sc-btn--primary" onClick={startSecondInnings}>
-            Start 2nd Innings
-          </button>
-          <button className="sc-btn sc-btn--secondary" onClick={endMatch}>
-            End Match
-          </button>
+          {followOnEligible && (
+            <button className="sc-btn sc-btn--followon" onClick={() => startNextInnings(true)}>
+              Enforce Follow-on
+            </button>
+          )}
+          {!isLastInnings && (
+            <button className="sc-btn sc-btn--primary" onClick={() => startNextInnings(false)}>
+              Start {ordinal(nextInnings)} Innings
+            </button>
+          )}
+          {isLastInnings
+            ? <button className="sc-btn sc-btn--primary" onClick={endMatch}>Complete Match</button>
+            : <button className="sc-btn sc-btn--secondary" onClick={endMatch}>End Match (Draw)</button>
+          }
         </div>
       </div>
     )
   }
 
-  // ─── Match ended ────────────────────────────────────────────────────────────
+  // ─── Match ended ──────────────────────────────────────────────────────────────
 
   if (phase === 'ended') {
-    const score2 = computeScore(deliveries, 2)
-    const bat1 = deliveries.find(d => d.innings === 1)?.battingTeam || ''
-    const bat2 = deliveries.find(d => d.innings === 2)?.battingTeam || ''
+    const allInnings = [1, 2, 3, 4]
+      .map(n => ({ n, team: getBattingTeam(n), score: computeScore(deliveries, n) }))
+      .filter(x => x.score.legalBalls > 0)
     return (
       <div className="sc-break">
         <h2>Match Complete</h2>
-        <div className="sc-break__score">
-          <span>{bat1}</span>
-          <span className="sc-break__runs">{score1.runs}/{score1.wickets}</span>
-        </div>
-        {score2.legalBalls > 0 && (
-          <div className="sc-break__score">
-            <span>{bat2}</span>
-            <span className="sc-break__runs">{score2.runs}/{score2.wickets}</span>
+        {matchResult && <div className="sc-break__result">{matchResult}</div>}
+        {allInnings.map(({ n, team, score: s }) => (
+          <div key={n} className="sc-break__score">
+            <span>{team} <span className="sc-break__inns-label">({ordinal(n)} inn)</span></span>
+            <span className="sc-break__runs">{s.runs}/{s.wickets}</span>
+            <span className="sc-break__overs">({s.overs}.{s.balls} ov)</span>
           </div>
-        )}
+        ))}
         <p className="sc-break__note">Check the View Statistics tab for full scorecard.</p>
       </div>
     )
   }
 
-  // ─── Scoring phase ──────────────────────────────────────────────────────────
+  // ─── Scoring phase ────────────────────────────────────────────────────────────
 
   const remainingSlots = Math.max(0, 6 - legalBallsInOver)
+  const endBtnLabel = isTestFormat && innings < maxInnings
+    ? 'Declare'
+    : innings >= maxInnings ? 'End Match' : innings === 1 ? 'End Innings' : 'End Match'
 
   return (
     <div className="sc-root">
 
       {/* ── Scoreboard ── */}
       <div className="sc-board">
-        <div className="sc-board__team">{battingTeam} · Innings {innings}</div>
+        <div className="sc-board__team">{battingTeam} · {ordinal(innings)} Innings</div>
         <div className="sc-board__score">
           {score.runs}<span className="sc-board__sep">/</span>{score.wickets}
         </div>
-        <div className="sc-board__overs">({score.overs}.{score.balls} ov)</div>
+        <div className="sc-board__overs">
+          ({score.overs}.{score.balls} ov{!isTestFormat && ballsRemaining !== null ? ` · ${ballsRemaining} balls rem` : ''})
+        </div>
+
+        {/* Target strip — shown in chasing innings */}
+        {isChasingInnings && target !== null && target > 0 && (
+          <div className="sc-board__target">
+            <span>Target {target}</span>
+            <span>Need {required}</span>
+            {rrr && <span>RRR {rrr}</span>}
+            {ballsRemaining !== null && <span>{ballsRemaining} balls</span>}
+          </div>
+        )}
+        {isChasingInnings && target !== null && target <= 0 && (
+          <div className="sc-board__target sc-board__target--won">
+            {battingTeam} have won!
+          </div>
+        )}
+
+        {/* Lead/deficit — Test intermediate innings */}
+        {!isChasingInnings && innings > 1 && target !== null && (
+          <div className="sc-board__lead">
+            {(() => {
+              const lead = score.runs - (target - 1)
+              return lead >= 0
+                ? `Leading by ${lead} run${lead !== 1 ? 's' : ''}`
+                : `Trailing by ${-lead} run${lead !== -1 ? 's' : ''}`
+            })()}
+          </div>
+        )}
+
+        {/* Previous innings scores */}
+        {innings > 1 && (
+          <div className="sc-board__prev">
+            {Array.from({ length: innings - 1 }, (_, i) => i + 1).map(n => {
+              const s = computeScore(deliveries, n)
+              return s.legalBalls > 0
+                ? <span key={n}>{getBattingTeam(n)}: {s.runs}/{s.wickets}</span>
+                : null
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Batsmen ── */}
@@ -431,8 +685,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         <div className="sc-batsman sc-batsman--striker">
           <div className="sc-batsman__name">{striker} <span className="sc-strike-dot">●</span></div>
           <div className="sc-batsman__score">
-            {strikerStats.runs}
-            <span className="sc-batsman__balls"> ({strikerStats.balls})</span>
+            {strikerStats.runs}<span className="sc-batsman__balls"> ({strikerStats.balls})</span>
           </div>
           <div className="sc-batsman__detail">
             SR {strikerStats.balls > 0 ? ((strikerStats.runs / strikerStats.balls) * 100).toFixed(0) : 0}
@@ -442,8 +695,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         <div className="sc-batsman">
           <div className="sc-batsman__name">{nonStriker}</div>
           <div className="sc-batsman__score">
-            {nonStrikerStats.runs}
-            <span className="sc-batsman__balls"> ({nonStrikerStats.balls})</span>
+            {nonStrikerStats.runs}<span className="sc-batsman__balls"> ({nonStrikerStats.balls})</span>
           </div>
           <div className="sc-batsman__detail">
             SR {nonStrikerStats.balls > 0 ? ((nonStrikerStats.runs / nonStrikerStats.balls) * 100).toFixed(0) : 0}
@@ -506,11 +758,8 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               >
                 ↩ Undo
               </button>
-              <button className="sc-btn sc-btn--end" onClick={() => {
-                if (innings === 1) onChange({ deliveries, scorecardState: { ...scorecardState, phase: 'inningsBreak' } })
-                else endMatch()
-              }}>
-                {innings === 1 ? 'End Innings' : 'End Match'}
+              <button className="sc-btn sc-btn--end" onClick={handleEndInnings}>
+                {endBtnLabel}
               </button>
             </div>
           </>
@@ -573,15 +822,11 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'newBatsman' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">New Batsman In</div>
-            {batterNames.length > 0 && <datalist id="dl-batters-prompt">{batterNames.map(n => <option key={n} value={n} />)}</datalist>}
-            <input
-              className="sc-prompt__input"
-              type="text" autoFocus
-              placeholder="Batsman name"
+            <PlayerPicker
+              names={batterNames}
               value={newBatsmanInput}
-              list={batterNames.length > 0 ? 'dl-batters-prompt' : undefined}
-              onChange={e => setNewBatsmanInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && confirmNewBatsman()}
+              onChange={setNewBatsmanInput}
+              placeholder="Select batsman…"
             />
             <button
               className="sc-btn sc-btn--primary"
@@ -594,15 +839,11 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'newBowler' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">Over {overNum + 1} — New Bowler</div>
-            {bowlerNames.length > 0 && <datalist id="dl-bowlers-prompt">{bowlerNames.map(n => <option key={n} value={n} />)}</datalist>}
-            <input
-              className="sc-prompt__input"
-              type="text" autoFocus
-              placeholder="Bowler name"
+            <PlayerPicker
+              names={bowlerNames}
               value={newBowlerInput}
-              list={bowlerNames.length > 0 ? 'dl-bowlers-prompt' : undefined}
-              onChange={e => setNewBowlerInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && confirmNewBowler()}
+              onChange={setNewBowlerInput}
+              placeholder="Select bowler…"
             />
             <button
               className="sc-btn sc-btn--primary"
@@ -622,11 +863,10 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             if (!balls.length) return null
             const ovRuns = balls.reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
             const ovWkts = balls.filter(d => d.wicket).length
-            const bowlerName = balls[0]?.bowler || ''
             return (
               <div key={ov} className="sc-history__row">
                 <span className="sc-history__ov">Ov {ov + 1}</span>
-                <span className="sc-history__bowler">{bowlerName}</span>
+                <span className="sc-history__bowler">{balls[0]?.bowler || ''}</span>
                 <span className="sc-history__balls">
                   {balls.map((d, i) => <Ball key={i} d={d} />)}
                 </span>

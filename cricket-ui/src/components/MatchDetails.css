@@ -99,3 +99,26 @@
   color: #a0aec0;
   margin-top: 0.2rem;
 }
+
+.no-teams-prompt {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #4a5568;
+}
+
+.no-teams-prompt__icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.no-teams-prompt h3 {
+  font-size: 1.3rem;
+  color: #2d3748;
+  margin-bottom: 0.75rem;
+}
+
+.no-teams-prompt p {
+  color: #718096;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}

@@ -31,30 +31,20 @@ async function supabaseLoadMatches() {
 }
 
 async function supabaseSaveMatch(match) {
+  const userId = await getUserId()
   const payload = {
     match_data: match.matchData,
     batting_stats: match.battingStats || [],
     bowling_stats: match.bowlingStats || [],
     deliveries: match.deliveries || [],
     scorecard_state: match.scorecardState || {},
+    user_id: userId,
   }
+  if (match.id) payload.id = match.id
 
-  // Update if valid UUID, otherwise insert
-  if (match.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(match.id)) {
-    const { data, error } = await supabase
-      .from('matches')
-      .update(payload)
-      .eq('id', match.id)
-      .select()
-      .single()
-    if (error) throw error
-    return data.id
-  }
-
-  const userId = await getUserId()
   const { data, error } = await supabase
     .from('matches')
-    .insert({ ...payload, user_id: userId })
+    .upsert(payload)
     .select()
     .single()
   if (error) throw error

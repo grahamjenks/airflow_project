@@ -106,6 +106,8 @@ const DEFAULT_SCORECARD_STATE = {
   currentBowler: '',
   overNum: 0,
   legalBallsInOver: 0,
+  followOnTaken: false,
+  matchResult: '',
 }
 
 function App() {
@@ -269,7 +271,7 @@ function App() {
 
       <main className="app-main">
         {currentView === 'match' && (
-          <MatchDetails onSubmit={handleMatchSubmit} matchData={matchData} teams={teams} />
+          <MatchDetails onSubmit={handleMatchSubmit} matchData={matchData} teams={teams} session={session} />
         )}
         {currentView === 'scorecard' && (
           <LiveScorecard
