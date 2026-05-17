@@ -38,6 +38,7 @@ export default function PlayerStats() {
     const teams = new Set()
     for (const m of matches) {
       ;(m.batting_stats || []).forEach(s => s.team && teams.add(s.team))
+      ;(m.bowling_stats || []).forEach(s => s.team && teams.add(s.team))
     }
     return [...teams].sort()
   }, [matches])

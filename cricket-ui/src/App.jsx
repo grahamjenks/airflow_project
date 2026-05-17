@@ -301,6 +301,7 @@ function App() {
             matchData={matchData}
             battingStats={battingStats}
             bowlingStats={bowlingStats}
+            deliveries={deliveries}
             onReset={resetAll}
             onSave={saveMatch}
             onViewScorecard={() => setCurrentView('scorecard')}

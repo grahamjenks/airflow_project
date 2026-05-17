@@ -1,8 +1,68 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import './StatisticsView.css'
+
+// ─── Delivery-derived helpers ─────────────────────────────────────────────────
+
+function inningsBatting(deliveries, n) {
+  return (deliveries || []).find(d => d.innings === n)?.battingTeam || `Innings ${n}`
+}
+
+function buildRunsPerOver(deliveries) {
+  if (!deliveries?.length) return null
+  const nums = [...new Set(deliveries.map(d => d.innings))].sort()
+  const maxOv = Math.max(...nums.flatMap(n =>
+    deliveries.filter(d => d.innings === n && !d.isRetirement).map(d => d.overNum)
+  ), -1)
+  if (maxOv < 0) return null
+  const rows = Array.from({ length: maxOv + 1 }, (_, ov) => {
+    const row = { over: ov + 1 }
+    for (const n of nums) {
+      row[`i${n}`] = deliveries
+        .filter(d => d.innings === n && !d.isRetirement && d.overNum === ov)
+        .reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
+    }
+    return row
+  })
+  return { rows, inningsNums: nums }
+}
+
+function buildFallOfWickets(deliveries) {
+  if (!deliveries?.length) return []
+  const nums = [...new Set(deliveries.map(d => d.innings))].sort()
+  return nums.map(n => {
+    const balls = deliveries.filter(d => d.innings === n && !d.isRetirement)
+    const wickets = []
+    let runs = 0, legal = 0
+    for (const d of balls) {
+      runs += d.batRuns + d.extraRuns
+      if (d.isLegalDelivery) legal++
+      if (d.wicket) {
+        const ov = Math.floor(legal / 6), rem = legal % 6
+        wickets.push({ wicket: wickets.length + 1, runs, over: `${ov}.${rem}`, batsman: d.wicket.outBatsman, how: d.wicket.type })
+      }
+    }
+    return { innings: n, team: inningsBatting(deliveries, n), wickets }
+  }).filter(x => x.wickets.length > 0)
+}
+
+function buildExtras(deliveries) {
+  if (!deliveries?.length) return []
+  const nums = [...new Set(deliveries.map(d => d.innings))].sort()
+  return nums.map(n => {
+    const balls = deliveries.filter(d => d.innings === n && !d.isRetirement)
+    const wides   = balls.filter(d => d.extraType === 'wide').reduce((s, d) => s + d.extraRuns, 0)
+    const noBalls = balls.filter(d => d.extraType === 'noball').reduce((s, d) => s + d.extraRuns, 0)
+    const byes    = balls.filter(d => d.extraType === 'bye').reduce((s, d) => s + d.extraRuns, 0)
+    const legByes = balls.filter(d => d.extraType === 'legbye').reduce((s, d) => s + d.extraRuns, 0)
+    return { innings: n, team: inningsBatting(deliveries, n), wides, noBalls, byes, legByes, total: wides + noBalls + byes + legByes }
+  }).filter(e => e.total > 0)
+}
+
+const ORDINAL = ['1st', '2nd', '3rd', '4th']
+const INS_COLORS = ['#667eea', '#e53e3e', '#38a169', '#d69e2e']
 
 const COLORS = ['#667eea', '#764ba2', '#38a169', '#e53e3e', '#dd6b20', '#3182ce', '#d69e2e', '#805ad5']
 
@@ -27,7 +87,10 @@ function KpiCard({ label, value, sub, color }) {
   )
 }
 
-function StatisticsView({ matchData, battingStats, bowlingStats, onReset, onSave, onViewScorecard }) {
+function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = [], onReset, onSave, onViewScorecard }) {
+  const runsPerOver   = buildRunsPerOver(deliveries)
+  const fallOfWickets = buildFallOfWickets(deliveries)
+  const extrasData    = buildExtras(deliveries)
   const calculateBattingTotals = () => {
     if (battingStats.length === 0) return null
     const totals = battingStats.reduce((acc, stat) => {
@@ -325,6 +388,89 @@ function StatisticsView({ matchData, battingStats, bowlingStats, onReset, onSave
           })}
         </div>
       </div>
+
+      {/* ── Run Rate by Over ── */}
+      {runsPerOver && runsPerOver.rows.length > 0 && (
+        <div className="stats-section">
+          <h3>Run Rate by Over</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={runsPerOver.rows} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="over" tick={{ fontSize: 11 }} label={{ value: 'Over', position: 'insideBottomRight', offset: -4, fontSize: 11, fill: '#a0aec0' }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip formatter={(v, name) => [v, name]} labelFormatter={l => `Over ${l}`} />
+                <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
+                {runsPerOver.inningsNums.map((n, i) => (
+                  <Bar
+                    key={n}
+                    dataKey={`i${n}`}
+                    name={`${inningsBatting(deliveries, n)} (${ORDINAL[n - 1] || `${n}th`})`}
+                    fill={INS_COLORS[i % INS_COLORS.length]}
+                    radius={[4, 4, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ── Fall of Wickets ── */}
+      {fallOfWickets.length > 0 && (
+        <div className="stats-section">
+          <h3>Fall of Wickets</h3>
+          {fallOfWickets.map(({ innings, team, wickets }) => (
+            <div key={innings} className="team-stats-block">
+              <h4 className="team-stats-label">{team} — {ORDINAL[innings - 1] || `${innings}th`} Innings</h4>
+              <div className="stats-table-container">
+                <table className="stats-table">
+                  <thead>
+                    <tr><th>Wkt</th><th>Score</th><th>Over</th><th>Batsman</th><th>How Out</th></tr>
+                  </thead>
+                  <tbody>
+                    {wickets.map((w, i) => (
+                      <tr key={i}>
+                        <td><strong>{w.wicket}</strong></td>
+                        <td><strong>{w.runs}</strong></td>
+                        <td>{w.over}</td>
+                        <td>{w.batsman}</td>
+                        <td><span className={`dismissal-badge dismissal-${(w.how || '').toLowerCase().replace(/ /g, '-')}`}>{w.how}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Extras Breakdown ── */}
+      {extrasData.length > 0 && (
+        <div className="stats-section">
+          <h3>Extras</h3>
+          <div className="stats-table-container">
+            <table className="stats-table">
+              <thead>
+                <tr><th>Innings</th><th>Wides</th><th>No Balls</th><th>Byes</th><th>Leg Byes</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                {extrasData.map((e, i) => (
+                  <tr key={i}>
+                    <td>{e.team} <span style={{ color: '#a0aec0', fontSize: '0.8em' }}>({ORDINAL[e.innings - 1]})</span></td>
+                    <td>{e.wides}</td>
+                    <td>{e.noBalls}</td>
+                    <td>{e.byes}</td>
+                    <td>{e.legByes}</td>
+                    <td><strong>{e.total}</strong></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="export-section">
         <h3>Export Data</h3>
