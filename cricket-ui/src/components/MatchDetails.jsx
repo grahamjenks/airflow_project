@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { loadPlayers } from '../services/teamService'
 import './MatchDetails.css'
 
 const FORMAT_BY_MATCH_TYPE = {
@@ -10,6 +11,8 @@ const FORMAT_BY_MATCH_TYPE = {
 }
 
 const TODAY = new Date().toISOString().split('T')[0]
+
+const ROLE_ABBR = { 'Wicket-keeper': 'WK', 'Bowler': 'B', 'All-rounder': 'AR', 'Batter': 'BAT' }
 
 function MatchDetails({ onSubmit, matchData, teams = [], session }) {
   const [formData, setFormData] = useState(matchData || {
@@ -25,7 +28,24 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
     overs: 20,
     tossWinner: '',
     tossDecision: '',
+    team1XI: [],
+    team2XI: [],
   })
+  const [squadData, setSquadData] = useState({})
+
+  useEffect(() => {
+    if (!formData.team1Id) return
+    loadPlayers(formData.team1Id).then(players =>
+      setSquadData(prev => ({ ...prev, [formData.team1Id]: players }))
+    )
+  }, [formData.team1Id])
+
+  useEffect(() => {
+    if (!formData.team2Id) return
+    loadPlayers(formData.team2Id).then(players =>
+      setSquadData(prev => ({ ...prev, [formData.team2Id]: players }))
+    )
+  }, [formData.team2Id])
 
   // If Supabase is active and the user is signed in but has no teams, block match creation
   if (isSupabaseConfigured() && session && teams.length === 0) {
@@ -80,7 +100,52 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
       ...prev,
       [slot]: team ? team.name : teamId,
       [`${slot}Id`]: team ? team.id : '',
+      [`${slot}XI`]: [],
     }))
+  }
+
+  const toggleXIPlayer = (slot, playerName) => {
+    setFormData(prev => {
+      const xi = prev[`${slot}XI`] || []
+      return {
+        ...prev,
+        [`${slot}XI`]: xi.includes(playerName) ? xi.filter(n => n !== playerName) : [...xi, playerName],
+      }
+    })
+  }
+
+  const PlayingXI = ({ slot }) => {
+    const teamId = formData[`${slot}Id`]
+    const players = teamId ? (squadData[teamId] || []) : []
+    if (!players.length) return null
+    const xi = formData[`${slot}XI`] || []
+    const xiSet = new Set(xi)
+    const allNames = players.map(p => p.name)
+    return (
+      <div className="form-group form-group--xi">
+        <div className="xi-header">
+          <label>Playing XI <span className="xi-optional">(optional)</span></label>
+          <span className="xi-count">{xi.length > 0 ? `${xi.length} selected` : 'Full squad'}</span>
+        </div>
+        <div className="xi-grid">
+          {players.map(p => (
+            <label key={p.name} className={`xi-player${xiSet.has(p.name) ? ' xi-player--on' : ''}`}>
+              <input
+                type="checkbox"
+                checked={xiSet.has(p.name)}
+                onChange={() => toggleXIPlayer(slot, p.name)}
+              />
+              <span className="xi-player__name">{p.name}</span>
+              {p.role && <span className="xi-player__role">{ROLE_ABBR[p.role] || p.role[0]}</span>}
+            </label>
+          ))}
+        </div>
+        <div className="xi-actions">
+          <button type="button" className="xi-btn" onClick={() => setFormData(prev => ({ ...prev, [`${slot}XI`]: allNames }))}>All</button>
+          {xi.length > 0 && <button type="button" className="xi-btn xi-btn--clear" onClick={() => setFormData(prev => ({ ...prev, [`${slot}XI`]: [] }))}>Clear</button>}
+        </div>
+      </div>
+    )
   }
 
   const handleSubmit = (e) => {
@@ -176,6 +241,13 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
           <TeamInput slot="team1" label="Team 1" />
           <TeamInput slot="team2" label="Team 2" />
         </div>
+
+        {(squadData[formData.team1Id]?.length > 0 || squadData[formData.team2Id]?.length > 0) && (
+          <div className="form-row">
+            <PlayingXI slot="team1" />
+            <PlayingXI slot="team2" />
+          </div>
+        )}
 
         <div className="form-row">
           <div className="form-group">

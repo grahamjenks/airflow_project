@@ -5,6 +5,74 @@ const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit W
 
 const ordinal = n => ['1st', '2nd', '3rd', '4th'][n - 1] || `${n}th`
 
+function formatOvers(legalBalls) {
+  const ov = Math.floor(legalBalls / 6); const rem = legalBalls % 6
+  return rem ? `${ov}.${rem}` : String(ov)
+}
+
+function formatDismissal(b) {
+  if (b.dismissal === 'not out') return 'not out'
+  if (b.dismissal === 'Bowled') return `b ${b.bowler}`
+  if (b.dismissal === 'LBW') return `lbw b ${b.bowler}`
+  if (b.dismissal === 'Caught') return `c ${b.fielder ? b.fielder + ' ' : ''}b ${b.bowler}`.trim()
+  if (b.dismissal === 'Stumped') return `st ${b.fielder ? b.fielder + ' ' : ''}b ${b.bowler}`.trim()
+  if (b.dismissal === 'Hit Wicket') return `hit wkt b ${b.bowler}`
+  if (b.dismissal === 'Run Out') return `run out${b.fielder ? ` (${b.fielder})` : ''}`
+  if (b.dismissal === 'Retired Hurt') return 'ret hurt'
+  if (b.dismissal === 'Retired Out') return 'ret out'
+  return b.dismissal
+}
+
+function buildScorecardData(deliveries, inningsNum) {
+  const batOrder = []; const batters = {}
+  const bowlerOrder = []; const bowlers = {}
+  const overMap = {}
+  for (const d of deliveries) {
+    if (d.innings !== inningsNum) continue
+    if (d.isRetirement) {
+      if (d.retiredBatter && batters[d.retiredBatter])
+        batters[d.retiredBatter].dismissal = d.retirementType === 'Out' ? 'Retired Out' : 'Retired Hurt'
+      continue
+    }
+    for (const name of [d.striker, d.nonStriker]) {
+      if (name && !batters[name]) {
+        batOrder.push(name)
+        batters[name] = { name, runs: 0, balls: 0, fours: 0, sixes: 0, dismissal: 'not out', bowler: '', fielder: '' }
+      }
+    }
+    if (d.striker) {
+      const b = batters[d.striker]
+      if (d.extraType !== 'bye' && d.extraType !== 'legbye') b.runs += d.batRuns
+      if (d.batRuns === 4 && !d.extraType) b.fours++
+      if (d.batRuns === 6 && !d.extraType) b.sixes++
+      if (d.extraType !== 'wide') b.balls++
+      if (d.wicket?.outBatsman === d.striker) { b.dismissal = d.wicket.type; b.bowler = d.bowler || ''; b.fielder = d.wicket.fielder || '' }
+    }
+    if (d.wicket?.outBatsman && d.wicket.outBatsman !== d.striker && batters[d.wicket.outBatsman]) {
+      const b = batters[d.wicket.outBatsman]
+      b.dismissal = d.wicket.type; b.bowler = d.bowler || ''; b.fielder = d.wicket.fielder || ''
+    }
+    if (d.bowler) {
+      if (!bowlers[d.bowler]) { bowlerOrder.push(d.bowler); bowlers[d.bowler] = { name: d.bowler, legalBalls: 0, runs: 0, wickets: 0, maidens: 0, wides: 0, noBalls: 0 } }
+      const bwl = bowlers[d.bowler]
+      const charged = d.extraType === 'bye' || d.extraType === 'legbye' ? 0 : d.batRuns + d.extraRuns
+      if (d.isLegalDelivery) bwl.legalBalls++
+      bwl.runs += charged
+      if (d.extraType === 'wide') bwl.wides++
+      if (d.extraType === 'noball') bwl.noBalls++
+      if (d.wicket && d.wicket.type !== 'Run Out' && d.wicket.type !== 'Retired Hurt') bwl.wickets++
+      const ok = `${d.bowler}:${d.overNum}`
+      if (!overMap[ok]) overMap[ok] = { bowler: d.bowler, balls: 0, runs: 0 }
+      if (d.isLegalDelivery) overMap[ok].balls++
+      overMap[ok].runs += charged
+    }
+  }
+  for (const ov of Object.values(overMap)) {
+    if (ov.balls === 6 && ov.runs === 0 && bowlers[ov.bowler]) bowlers[ov.bowler].maidens++
+  }
+  return { batters: batOrder.map(n => batters[n]), bowlers: bowlerOrder.map(n => bowlers[n]) }
+}
+
 function defaultBattingTeam(matchData) {
   const { team1, team2, tossWinner, tossDecision } = matchData || {}
   if (!tossWinner || !tossDecision || !team1 || !team2) return team1 || ''
@@ -163,6 +231,97 @@ function PlayerPicker({ names = [], value, onChange, placeholder, className, pin
   )
 }
 
+// ─── Expandable full scorecard ────────────────────────────────────────────────
+
+function FullScorecard({ deliveries, currentInnings, currentStriker, currentBowler, show, onToggle }) {
+  const playedInnings = [1, 2, 3, 4].filter(n =>
+    deliveries.some(d => d.innings === n && !d.isRetirement)
+  )
+  if (!playedInnings.length) return null
+
+  return (
+    <div className="sc-fullcard">
+      <button className="sc-fullcard__toggle" onClick={onToggle}>
+        {show ? '▲ Hide Scorecard' : '▼ Full Scorecard'}
+      </button>
+      {show && (
+        <div className="sc-fullcard__body">
+          {playedInnings.map(n => {
+            const { batters, bowlers } = buildScorecardData(deliveries, n)
+            const bTeam = inningsBattingTeam(deliveries, n)
+            const s = computeScore(deliveries, n)
+            const isLive = n === currentInnings
+            return (
+              <div key={n} className="sc-fullcard__innings">
+                <div className="sc-fullcard__inn-header">
+                  <span className="sc-fullcard__inn-team">{bTeam}</span>
+                  <span className="sc-fullcard__inn-score">{s.runs}/{s.wickets}</span>
+                  <span className="sc-fullcard__inn-label">{ordinal(n)} Inn · {s.overs}.{s.balls} ov</span>
+                </div>
+
+                {batters.length > 0 && (
+                  <table className="sc-fullcard__table">
+                    <thead>
+                      <tr>
+                        <th className="sc-fullcard__th--name">Batter</th>
+                        <th className="sc-fullcard__th--how"></th>
+                        <th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batters.map(b => (
+                        <tr key={b.name} className={isLive && (b.name === currentStriker || b.name === nonStrikerInInnings(deliveries, n, currentStriker)) ? 'sc-fullcard__row--live' : ''}>
+                          <td className="sc-fullcard__td--name">
+                            {b.name}{isLive && b.name === currentStriker && <span className="sc-fullcard__dot"> ●</span>}
+                          </td>
+                          <td className="sc-fullcard__td--how">{formatDismissal(b)}</td>
+                          <td><strong>{b.runs}</strong></td>
+                          <td className="sc-fullcard__muted">{b.balls}</td>
+                          <td className="sc-fullcard__muted">{b.fours}</td>
+                          <td className="sc-fullcard__muted">{b.sixes}</td>
+                          <td className="sc-fullcard__muted">{b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(0) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {bowlers.length > 0 && (
+                  <table className="sc-fullcard__table sc-fullcard__table--bowl">
+                    <thead>
+                      <tr>
+                        <th className="sc-fullcard__th--name">Bowler</th>
+                        <th>O</th><th>M</th><th>R</th><th>W</th><th>Econ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bowlers.map(b => (
+                        <tr key={b.name} className={isLive && b.name === currentBowler ? 'sc-fullcard__row--live' : ''}>
+                          <td className="sc-fullcard__td--name">{b.name}</td>
+                          <td>{formatOvers(b.legalBalls)}</td>
+                          <td className="sc-fullcard__muted">{b.maidens}</td>
+                          <td>{b.runs}</td>
+                          <td><strong>{b.wickets}</strong></td>
+                          <td className="sc-fullcard__muted">{b.legalBalls > 0 ? (b.runs / (b.legalBalls / 6)).toFixed(2) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function nonStrikerInInnings(deliveries, inningsNum, striker) {
+  const last = [...deliveries].reverse().find(d => d.innings === inningsNum && !d.isRetirement)
+  return last?.striker === striker ? last?.nonStriker : last?.striker
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const DEFAULT_WICKET_FORM = { type: 'Bowled', fielder: '', outBatsman: '' }
@@ -188,8 +347,21 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
   const sqBattingTeam = battingTeam || setupForm.battingTeam
   const sqBowlingTeam = bowlingTeam || (sqBattingTeam === matchData?.team1 ? matchData?.team2 : matchData?.team1)
-  const batterNames = (squad[sqBattingTeam] || []).map(p => p.name)
-  const bowlerNames = (squad[sqBowlingTeam] || [])
+
+  // XI filter: if a playing XI was set for a team, restrict to those players
+  const xiFor = (teamName) => {
+    const xi = teamName === matchData?.team1 ? matchData?.team1XI
+             : teamName === matchData?.team2 ? matchData?.team2XI
+             : null
+    return xi?.length ? new Set(xi) : null
+  }
+  const filterByXI = (players, teamName) => {
+    const xi = xiFor(teamName)
+    return xi ? players.filter(p => xi.has(p.name)) : players
+  }
+
+  const batterNames = filterByXI(squad[sqBattingTeam] || [], sqBattingTeam).map(p => p.name)
+  const bowlerNames = filterByXI(squad[sqBowlingTeam] || [], sqBowlingTeam)
     .slice()
     .sort((a, b) => {
       const pri = r => (r === 'Bowler' || r === 'All-rounder' ? 0 : 1)
@@ -218,6 +390,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const [newBatsmanInput, setNewBatsmanInput] = useState('')
   const [newBowlerInput, setNewBowlerInput] = useState('')
   const [needBowlerAfterBatsman, setNeedBowlerAfterBatsman] = useState(false)
+  const [showFullScorecard, setShowFullScorecard] = useState(false)
 
   const score = useMemo(() => computeScore(deliveries, innings), [deliveries, innings])
   const strikerStats = useMemo(() => getBatsmanStats(deliveries, innings, striker), [deliveries, innings, striker])
@@ -244,7 +417,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
   // All bowling-side players for the fielder picker, keeper first
   const fielderGroups = useMemo(() => {
-    const sqd = squad[sqBowlingTeam] || []
+    const sqd = filterByXI(squad[sqBowlingTeam] || [], sqBowlingTeam)
     if (!sqd.length) return null
     const keepers = sqd.filter(p => p.role === 'Wicket-keeper').map(p => p.name)
     const rest    = sqd.filter(p => p.role !== 'Wicket-keeper').map(p => p.name)
@@ -252,13 +425,13 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     if (keepers.length) groups.push({ label: 'Wicket-keeper', names: keepers })
     if (rest.length)    groups.push({ label: 'Fielders', names: rest })
     return groups.length ? groups : null
-  }, [squad, sqBowlingTeam])
+  }, [squad, sqBowlingTeam, matchData?.team1XI, matchData?.team2XI])
 
-  const fielderNames = useMemo(() => (squad[sqBowlingTeam] || []).map(p => p.name), [squad, sqBowlingTeam])
+  const fielderNames = useMemo(() => filterByXI(squad[sqBowlingTeam] || [], sqBowlingTeam).map(p => p.name), [squad, sqBowlingTeam, matchData?.team1XI, matchData?.team2XI])
 
   // Bowlers grouped by role for the new-bowler picker
   const bowlerGroups = useMemo(() => {
-    const sqd = squad[sqBowlingTeam] || []
+    const sqd = filterByXI(squad[sqBowlingTeam] || [], sqBowlingTeam)
     if (!sqd.length) return null
     const pinnedSet = new Set(recentBowlerPins)
     const groups = []
@@ -268,7 +441,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     if (specialists.length) groups.push({ label: 'Bowlers & All-rounders', names: specialists })
     if (others.length) groups.push({ label: 'Batters', names: others })
     return groups.length ? groups : null
-  }, [squad, sqBowlingTeam, recentBowlerPins])
+  }, [squad, sqBowlingTeam, recentBowlerPins, matchData?.team1XI, matchData?.team2XI])
 
   // Batters unavailable to come in: anyone who has appeared this innings, minus retired-hurt returners
   const unavailableBatters = useMemo(() => {
@@ -1077,6 +1250,9 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           })}
         </div>
       )}
+
+      {/* ── Full scorecard (expandable) ── */}
+      <FullScorecard deliveries={deliveries} currentInnings={innings} currentStriker={striker} currentBowler={currentBowler} show={showFullScorecard} onToggle={() => setShowFullScorecard(s => !s)} />
     </div>
   )
 }

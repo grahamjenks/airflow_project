@@ -152,6 +152,123 @@
   color: #2d3748;
 }
 
+/* ── Playing XI selector ── */
+.form-group--xi {
+  padding: 0.9rem 1rem 0.8rem;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  gap: 0.5rem;
+}
+
+.xi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.xi-header label {
+  margin: 0;
+}
+
+.xi-optional {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #a0aec0;
+}
+
+.xi-count {
+  font-size: 0.75rem;
+  color: #667eea;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.xi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.xi-player {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #4a5568;
+  transition: border-color 0.12s, background 0.12s;
+  user-select: none;
+  min-width: 0;
+}
+
+.xi-player input[type="checkbox"] {
+  accent-color: #667eea;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+
+.form-group--xi input[type="checkbox"] {
+  padding: 0;
+  border: none;
+  min-height: unset;
+}
+
+.xi-player--on {
+  border-color: #667eea;
+  background: #f0f3ff;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.xi-player__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xi-player__role {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: #a0aec0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.xi-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.xi-btn {
+  padding: 0.25rem 0.65rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.xi-btn:hover { border-color: #667eea; color: #2b6cb0; }
+
+.xi-btn--clear { color: #c53030; border-color: #fed7d7; }
+.xi-btn--clear:hover { border-color: #c53030; }
+
 .no-teams-prompt {
   text-align: center;
   padding: 3rem 2rem;

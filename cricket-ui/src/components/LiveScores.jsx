@@ -40,7 +40,14 @@ function buildWorm(deliveries) {
   if (!deliveries?.length) return { rows: [], inningsNums: [], wicketOvers: {} }
   const inningsNums = [...new Set(deliveries.map(d => d.innings))].sort()
 
-  // Collect all "over completion" points across all innings
+  // For each innings, the furthest "after-over" point that has actually been played
+  const maxPt = {}
+  for (const n of inningsNums) {
+    const overs = deliveries.filter(d => d.innings === n && !d.isRetirement).map(d => d.overNum)
+    maxPt[n] = overs.length > 0 ? Math.max(...overs) + 1 : 0
+  }
+
+  // Collect data points only from overs that were actually played
   const points = new Set([0])
   for (const n of inningsNums) {
     const overNums = [...new Set(deliveries.filter(d => d.innings === n).map(d => d.overNum))]
@@ -50,6 +57,7 @@ function buildWorm(deliveries) {
   const rows = [...points].sort((a, b) => a - b).map(pt => {
     const row = { over: pt }
     for (const n of inningsNums) {
+      if (pt > maxPt[n]) continue  // don't extend line beyond what's been played
       row[`i${n}`] = deliveries
         .filter(d => d.innings === n && d.overNum < pt)
         .reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
@@ -57,14 +65,16 @@ function buildWorm(deliveries) {
     return row
   })
 
-  // Which "after-over" points had a wicket in that over
+  // Wicket count per "after-over" point, per innings (supports multiple wickets in one over)
   const wicketOvers = {}
   for (const n of inningsNums) {
-    wicketOvers[n] = new Set(
-      deliveries
-        .filter(d => d.innings === n && d.wicket && !d.isRetirement)
-        .map(d => d.overNum + 1)
-    )
+    wicketOvers[n] = {}
+    deliveries
+      .filter(d => d.innings === n && d.wicket && !d.isRetirement)
+      .forEach(d => {
+        const key = d.overNum + 1
+        wicketOvers[n][key] = (wicketOvers[n][key] || 0) + 1
+      })
   }
 
   return { rows, inningsNums, wicketOvers }
@@ -260,7 +270,7 @@ function WormChart({ deliveries, matchOvers }) {
           )}
           {inningsNums.map((n, i) => {
             const color = INNINGS_COLORS[i % INNINGS_COLORS.length]
-            const wOvers = wicketOvers[n] || new Set()
+            const wCounts = wicketOvers[n] || {}
             return (
               <Line
                 key={n}
@@ -271,23 +281,20 @@ function WormChart({ deliveries, matchOvers }) {
                 strokeWidth={2.5}
                 dot={(props) => {
                   const { cx, cy, payload } = props
-                  if (!wOvers.has(payload.over) || payload.over === 0) {
+                  const count = wCounts[payload.over]
+                  if (!count || payload.over === 0) {
                     return <circle key={`nd-${n}-${payload.over}`} cx={cx} cy={cy} r={0} fill="none" />
                   }
                   return (
-                    <circle
-                      key={`w-${n}-${payload.over}`}
-                      cx={cx}
-                      cy={cy}
-                      r={5}
-                      fill={color}
-                      stroke="#fff"
-                      strokeWidth={1.5}
-                    />
+                    <g key={`w-${n}-${payload.over}`}>
+                      <circle cx={cx} cy={cy} r={count > 1 ? 8 : 5} fill={color} stroke="#fff" strokeWidth={1.5} />
+                      {count > 1 && (
+                        <text x={cx} y={cy + 4} textAnchor="middle" fontSize={9} fontWeight="bold" fill="white">{count}</text>
+                      )}
+                    </g>
                   )
                 }}
                 activeDot={{ r: 4 }}
-                connectNulls
               />
             )
           })}

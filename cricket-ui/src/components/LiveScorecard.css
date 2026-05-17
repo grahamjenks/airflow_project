@@ -697,6 +697,131 @@ select.sc-setup__input {
   box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
 }
 
+/* ── Full scorecard ─────────────────────────────────────────────────────────── */
+.sc-fullcard {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.sc-fullcard__toggle {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: #f7fafc;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #667eea;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+}
+
+.sc-fullcard__toggle:hover { background: #edf2f7; }
+
+.sc-fullcard__body { border-top: 1px solid #e2e8f0; }
+
+.sc-fullcard__innings {
+  padding: 0.75rem 1rem 0.9rem;
+  border-bottom: 1px solid #f0f4f8;
+}
+
+.sc-fullcard__innings:last-child { border-bottom: none; }
+
+.sc-fullcard__inn-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.sc-fullcard__inn-team {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2d3748;
+  flex: 1;
+}
+
+.sc-fullcard__inn-score {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1a202c;
+}
+
+.sc-fullcard__inn-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a0aec0;
+}
+
+.sc-fullcard__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin-bottom: 0.6rem;
+}
+
+.sc-fullcard__table thead th {
+  padding: 0.25rem 0.35rem;
+  text-align: right;
+  color: #a0aec0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sc-fullcard__th--name { text-align: left; }
+.sc-fullcard__th--how { text-align: left; }
+
+.sc-fullcard__table tbody td {
+  padding: 0.3rem 0.35rem;
+  text-align: right;
+  border-bottom: 1px solid #f7fafc;
+  color: #4a5568;
+}
+
+.sc-fullcard__table tbody tr:last-child td { border-bottom: none; }
+
+.sc-fullcard__td--name {
+  text-align: left;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-fullcard__td--how {
+  text-align: left;
+  color: #718096;
+  font-size: 0.72rem;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-fullcard__row--live td { background: #f0f3ff; }
+
+.sc-fullcard__dot { color: #667eea; }
+
+.sc-fullcard__muted { color: #a0aec0; }
+
+.sc-fullcard__table--bowl { margin-top: 0.5rem; margin-bottom: 0; }
+
+@media (max-width: 480px) {
+  .sc-fullcard__innings { padding: 0.75rem 0.75rem 0.9rem; }
+  .sc-fullcard__td--how { display: none; }
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .sc-board { padding: 1.25rem; }
