@@ -404,7 +404,7 @@ function MatchCard({ match }) {
               <span className="lsc-live-stat__name">{sc.currentBowler}</span>
               {bwlStats && (
                 <span className="lsc-live-stat__fig lsc-live-stat__fig--bowl">
-                  {formatOvers(bwlStats.legalBalls)}-{bwlStats.runs}-{bwlStats.wickets}
+                  {formatOvers(bwlStats.legalBalls)}-{bwlStats.maidens}-{bwlStats.runs}-{bwlStats.wickets}
                 </span>
               )}
             </div>
