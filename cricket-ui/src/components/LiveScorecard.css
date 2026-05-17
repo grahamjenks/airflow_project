@@ -1,0 +1,497 @@
+/* ── Root ──────────────────────────────────────────────────────────────────── */
+.sc-root {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ── Scoreboard ────────────────────────────────────────────────────────────── */
+.sc-board {
+  background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  text-align: center;
+  color: white;
+}
+
+.sc-board__team {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+  margin-bottom: 0.4rem;
+}
+
+.sc-board__score {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.sc-board__sep {
+  color: rgba(255,255,255,0.4);
+  font-weight: 300;
+  margin: 0 0.1em;
+}
+
+.sc-board__overs {
+  font-size: 0.95rem;
+  opacity: 0.65;
+  margin-top: 0.35rem;
+}
+
+/* ── Batsmen ───────────────────────────────────────────────────────────────── */
+.sc-batsmen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.sc-batsman {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.sc-batsman--striker {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f0f3ff 0%, #ffffff 100%);
+}
+
+.sc-batsman__name {
+  font-weight: 700;
+  color: #2d3748;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+
+.sc-strike-dot {
+  color: #667eea;
+  font-size: 0.5rem;
+  vertical-align: middle;
+}
+
+.sc-batsman__score {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a202c;
+  line-height: 1;
+}
+
+.sc-batsman__balls {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #718096;
+}
+
+.sc-batsman__detail {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 0.2rem;
+}
+
+/* ── Over strip ────────────────────────────────────────────────────────────── */
+.sc-over {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sc-over__bowler {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sc-over__name {
+  font-weight: 700;
+  color: #2d3748;
+  font-size: 0.9rem;
+}
+
+.sc-over__figs {
+  font-size: 0.8rem;
+  color: #718096;
+  font-family: monospace;
+}
+
+.sc-over__balls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.sc-over__label {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.25rem;
+}
+
+/* ── Ball chips ────────────────────────────────────────────────────────────── */
+.sc-ball {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.sc-ball--dot   { background: #f7fafc; color: #a0aec0; }
+.sc-ball--four  { background: #c6f6d5; color: #276749; }
+.sc-ball--six   { background: #fbd38d; color: #7b341e; }
+.sc-ball--wicket{ background: #fed7d7; color: #c53030; }
+.sc-ball--extra { background: #e9d8fd; color: #6b46c1; font-size: 0.65rem; }
+.sc-ball--empty { background: transparent; border: 2px dashed #e2e8f0; }
+
+/* ── Entry panel ───────────────────────────────────────────────────────────── */
+.sc-entry {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sc-entry__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a0aec0;
+}
+
+.sc-entry__row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sc-entry__row--extras {
+  gap: 0.5rem;
+}
+
+.sc-entry__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sc-btn:active { transform: scale(0.94); }
+.sc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.sc-btn--ball {
+  width: 62px;
+  height: 62px;
+  font-size: 1.3rem;
+  background: #f7fafc;
+  color: #2d3748;
+  border: 2px solid #e2e8f0;
+}
+
+.sc-btn--ball:hover:not(:disabled) { background: #edf2f7; border-color: #cbd5e0; }
+
+.sc-btn--four   { background: #c6f6d5 !important; border-color: #9ae6b4 !important; color: #276749 !important; }
+.sc-btn--six    { background: #fbd38d !important; border-color: #f6ad55 !important; color: #7b341e !important; }
+.sc-btn--wicket { background: #fed7d7 !important; border-color: #feb2b2 !important; color: #c53030 !important; }
+
+.sc-btn--extra {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  font-size: 0.9rem;
+  background: #f0ebff;
+  color: #6b46c1;
+  border: 2px solid #d6bcfa;
+}
+
+.sc-btn--extra:hover:not(:disabled) { background: #e9d8fd; }
+
+.sc-btn--primary {
+  flex: 1;
+  height: 48px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.sc-btn--primary:hover:not(:disabled) { opacity: 0.9; }
+
+.sc-btn--secondary {
+  flex: 1;
+  height: 48px;
+  font-size: 1rem;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.sc-btn--undo {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  background: #f7fafc;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+}
+
+.sc-btn--end {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  background: #fff5f5;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+  margin-left: auto;
+}
+
+.sc-btn--cancel {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  background: #f7fafc;
+  color: #718096;
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Prompts (wicket / new batsman / new bowler) ───────────────────────────── */
+.sc-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sc-prompt__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2d3748;
+  text-align: center;
+}
+
+.sc-prompt__input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1.1rem;
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.sc-prompt__input:focus { box-shadow: 0 0 0 3px rgba(102,126,234,0.25); }
+
+.sc-prompt__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ── Setup ─────────────────────────────────────────────────────────────────── */
+.sc-setup {
+  max-width: 480px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.sc-setup h2 { color: #2d3748; margin-bottom: 1.25rem; }
+
+.sc-setup__innings1 {
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.sc-setup__form { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Innings break / match over ────────────────────────────────────────────── */
+.sc-break {
+  max-width: 400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.sc-break h2 { color: #2d3748; margin-bottom: 1.5rem; }
+
+.sc-break__score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f7fafc;
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: #4a5568;
+}
+
+.sc-break__runs {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1a202c;
+}
+
+.sc-break__overs { font-size: 0.85rem; color: #718096; }
+
+.sc-break__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.sc-break__note { color: #718096; font-size: 0.9rem; margin-top: 1rem; }
+
+/* ── Over history ──────────────────────────────────────────────────────────── */
+.sc-history {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sc-history__title {
+  padding: 0.6rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a0aec0;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sc-history__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #f7fafc;
+  flex-wrap: wrap;
+}
+
+.sc-history__row:last-child { border-bottom: none; }
+
+.sc-history__ov {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  font-weight: 600;
+  min-width: 36px;
+}
+
+.sc-history__bowler {
+  font-size: 0.8rem;
+  color: #4a5568;
+  min-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-history__balls { display: flex; gap: 0.25rem; flex: 1; flex-wrap: wrap; }
+
+.sc-history__summary {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2d3748;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ── Shared form-group (reused from app) ───────────────────────────────────── */
+.sc-setup .form-group,
+.sc-entry .form-group,
+.sc-prompt .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sc-setup .form-group label,
+.sc-entry .form-group label,
+.sc-prompt .form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.sc-setup .form-group input,
+.sc-setup .form-group select,
+.sc-entry .form-group input,
+.sc-entry .form-group select,
+.sc-prompt .form-group input,
+.sc-prompt .form-group select {
+  padding: 0.65rem 0.9rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sc-setup .form-group input:focus,
+.sc-setup .form-group select:focus,
+.sc-entry .form-group input:focus,
+.sc-entry .form-group select:focus,
+.sc-prompt .form-group input:focus,
+.sc-prompt .form-group select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .sc-board { padding: 1.25rem; }
+  .sc-board__score { font-size: 2.8rem; }
+
+  .sc-btn--ball { width: 52px; height: 52px; font-size: 1.15rem; }
+
+  .sc-batsman { padding: 0.75rem 1rem; }
+  .sc-batsman__score { font-size: 1.3rem; }
+
+  .sc-history__bowler { display: none; }
+}

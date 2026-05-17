@@ -26,6 +26,8 @@ class Match(Base):
     match_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     batting_stats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     bowling_stats: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    deliveries: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    scorecard_state: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

@@ -18,6 +18,8 @@ export const loadMatches = async () => {
         matchData: match.matchData,
         battingStats: match.battingStats || [],
         bowlingStats: match.bowlingStats || [],
+        deliveries: match.deliveries || [],
+        scorecardState: match.scorecardState || {},
         lastUpdated: match.updated_at || match.created_at
       }))
     } catch (error) {
@@ -38,6 +40,8 @@ export const saveMatch = async (match) => {
         matchData: match.matchData,
         battingStats: match.battingStats || [],
         bowlingStats: match.bowlingStats || [],
+        deliveries: match.deliveries || [],
+        scorecardState: match.scorecardState || {},
       }
 
       if (isUuid(match.id)) {
@@ -81,6 +85,8 @@ export const loadMatchById = async (matchId) => {
         matchData: data.matchData,
         battingStats: data.battingStats || [],
         bowlingStats: data.bowlingStats || [],
+        deliveries: data.deliveries || [],
+        scorecardState: data.scorecardState || {},
         lastUpdated: data.updated_at || data.created_at,
       }
     } catch (error) {

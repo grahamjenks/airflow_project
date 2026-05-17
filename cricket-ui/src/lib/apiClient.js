@@ -84,6 +84,13 @@ export async function login(username, password) {
   return data.access_token
 }
 
+export async function register(username, password) {
+  const data = await apiFetch('/auth/register', { method: 'POST', body: { username, password }, auth: false })
+  if (!data?.access_token) throw new Error('Registration failed')
+  setToken(data.access_token)
+  return data.access_token
+}
+
 export const api = {
   listMatches: () => apiFetch('/matches', { method: 'GET' }),
   getMatch: (id) => apiFetch(`/matches/${id}`, { method: 'GET' }),

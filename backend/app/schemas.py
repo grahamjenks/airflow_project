@@ -16,10 +16,17 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+
+
 class MatchBase(BaseModel):
     matchData: dict = Field(default_factory=dict)
     battingStats: list = Field(default_factory=list)
     bowlingStats: list = Field(default_factory=list)
+    deliveries: list = Field(default_factory=list)
+    scorecardState: dict = Field(default_factory=dict)
 
 
 class MatchCreate(MatchBase):

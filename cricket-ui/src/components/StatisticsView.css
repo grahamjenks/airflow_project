@@ -47,6 +47,7 @@
   box-shadow: 0 8px 20px rgba(56, 161, 105, 0.4);
 }
 
+/* Match info */
 .match-info-card {
   background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
   border: 2px solid #667eea30;
@@ -77,6 +78,99 @@
   margin-right: 0.5rem;
 }
 
+/* KPI Cards */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.kpi-card {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  border-top: 4px solid #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #718096;
+  margin-bottom: 0.25rem;
+}
+
+.kpi-sub {
+  font-size: 0.78rem;
+  color: #a0aec0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Charts */
+.chart-container {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.25rem 1rem 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.chart-title {
+  color: #2d3748;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: start;
+}
+
+.chart-half {
+  min-width: 0;
+}
+
+/* Tooltip */
+.chart-tooltip {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.chart-tooltip .tooltip-name {
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0.35rem;
+}
+
+/* Stats table */
 .stats-sections {
   display: flex;
   flex-direction: column;
@@ -86,11 +180,6 @@
 .stats-section {
   border-top: 2px solid #e2e8f0;
   padding-top: 2rem;
-}
-
-.stats-section:first-child {
-  border-top: none;
-  padding-top: 0;
 }
 
 .stats-section h3 {
@@ -106,35 +195,6 @@
   padding: 2rem;
   background: #f7fafc;
   border-radius: 8px;
-}
-
-.totals-card {
-  background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
-  border: 2px solid #667eea30;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.totals-card h4 {
-  color: #2d3748;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-}
-
-.totals-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-}
-
-.totals-grid > div {
-  color: #4a5568;
-}
-
-.totals-grid strong {
-  color: #667eea;
-  margin-right: 0.5rem;
 }
 
 .stats-table-container {
@@ -155,10 +215,10 @@
 }
 
 .stats-table th {
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   text-align: left;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
@@ -176,11 +236,30 @@
 }
 
 .stats-table td {
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   color: #4a5568;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
+/* Dismissal badges */
+.dismissal-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.dismissal-badge.dismissal-bowled   { background: #fed7d7; color: #c53030; }
+.dismissal-badge.dismissal-caught   { background: #e9d8fd; color: #6b46c1; }
+.dismissal-badge.dismissal-lbw      { background: #feebc8; color: #c05621; }
+.dismissal-badge.dismissal-run-out  { background: #c6f6d5; color: #276749; }
+.dismissal-badge.dismissal-stumped  { background: #fefcbf; color: #744210; }
+.dismissal-badge.dismissal-not-out  { background: #bee3f8; color: #2c5282; }
+
+/* Export */
 .export-section {
   margin-top: 2rem;
   padding-top: 2rem;
@@ -209,9 +288,10 @@
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
+/* Responsive */
 @media (max-width: 768px) {
   .statistics-view {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
 
   .view-header {
@@ -219,21 +299,24 @@
     align-items: stretch;
   }
 
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+
   .match-info-grid {
     grid-template-columns: 1fr;
   }
 
-  .totals-grid {
-    grid-template-columns: 1fr;
-  }
-
   .stats-table {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
   }
 
   .stats-table th,
   .stats-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.65rem 0.5rem;
   }
 }
-

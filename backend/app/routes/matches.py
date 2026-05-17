@@ -29,6 +29,8 @@ def list_matches(
             matchData=row.match_data,
             battingStats=row.batting_stats,
             bowlingStats=row.bowling_stats,
+            deliveries=row.deliveries,
+            scorecardState=row.scorecard_state,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -66,6 +68,8 @@ def create_match(
         match_data=body.matchData,
         batting_stats=body.battingStats,
         bowling_stats=body.bowlingStats,
+        deliveries=body.deliveries,
+        scorecard_state=body.scorecardState,
     )
     db.add(row)
     db.commit()
@@ -94,6 +98,8 @@ def update_match(
     row.match_data = body.matchData
     row.batting_stats = body.battingStats
     row.bowling_stats = body.bowlingStats
+    row.deliveries = body.deliveries
+    row.scorecard_state = body.scorecardState
     db.add(row)
     db.commit()
     db.refresh(row)
