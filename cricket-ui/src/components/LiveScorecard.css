@@ -362,6 +362,17 @@ select.sc-setup__input {
   border: 1px solid #e2e8f0;
 }
 
+.sc-btn--swap {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  background: #ebf4ff;
+  color: #2b6cb0;
+  border: 1px solid #bee3f8;
+}
+
+.sc-btn--swap:hover:not(:disabled) { background: #bee3f8; }
+
 .sc-btn--retire {
   height: 40px;
   padding: 0 1rem;

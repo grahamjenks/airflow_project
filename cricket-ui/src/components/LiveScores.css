@@ -274,8 +274,14 @@
 .lsc-batting__bowler {
   margin-left: auto;
   color: #718096;
-  font-style: italic;
   font-size: 0.8rem;
+}
+
+.lsc-batting__stats {
+  font-weight: 400;
+  color: #667eea;
+  font-size: 0.78rem;
+  margin-left: 0.3rem;
 }
 
 /* ── Worm ── */

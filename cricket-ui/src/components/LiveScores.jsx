@@ -37,7 +37,7 @@ function target(deliveries, currentInnings, currentBatting) {
 
 // Build worm data: one point per completed over per innings, starting at 0
 function buildWorm(deliveries) {
-  if (!deliveries?.length) return { rows: [], inningsNums: [] }
+  if (!deliveries?.length) return { rows: [], inningsNums: [], wicketOvers: {} }
   const inningsNums = [...new Set(deliveries.map(d => d.innings))].sort()
 
   // Collect all "over completion" points across all innings
@@ -57,7 +57,17 @@ function buildWorm(deliveries) {
     return row
   })
 
-  return { rows, inningsNums }
+  // Which "after-over" points had a wicket in that over
+  const wicketOvers = {}
+  for (const n of inningsNums) {
+    wicketOvers[n] = new Set(
+      deliveries
+        .filter(d => d.innings === n && d.wicket && !d.isRetirement)
+        .map(d => d.overNum + 1)
+    )
+  }
+
+  return { rows, inningsNums, wicketOvers }
 }
 
 // ─── Scorecard derivation ─────────────────────────────────────────────────────
@@ -209,7 +219,7 @@ function ScorecardInnings({ deliveries, innings, sc }) {
 // ─── Worm chart ───────────────────────────────────────────────────────────────
 
 function WormChart({ deliveries, matchOvers }) {
-  const { rows, inningsNums } = buildWorm(deliveries)
+  const { rows, inningsNums, wicketOvers } = buildWorm(deliveries)
   if (rows.length < 2) {
     return <div className="lsc-worm-empty">Worm will appear once overs begin</div>
   }
@@ -248,19 +258,39 @@ function WormChart({ deliveries, matchOvers }) {
               label={{ value: `Target ${targetScore}`, position: 'right', fontSize: 11, fill: '#e53e3e' }}
             />
           )}
-          {inningsNums.map((n, i) => (
-            <Line
-              key={n}
-              type="monotone"
-              dataKey={`i${n}`}
-              name={`${battingTeam(deliveries, n)} (${ORDINAL[n - 1]})`}
-              stroke={INNINGS_COLORS[i % INNINGS_COLORS.length]}
-              strokeWidth={2.5}
-              dot={false}
-              activeDot={{ r: 4 }}
-              connectNulls
-            />
-          ))}
+          {inningsNums.map((n, i) => {
+            const color = INNINGS_COLORS[i % INNINGS_COLORS.length]
+            const wOvers = wicketOvers[n] || new Set()
+            return (
+              <Line
+                key={n}
+                type="monotone"
+                dataKey={`i${n}`}
+                name={`${battingTeam(deliveries, n)} (${ORDINAL[n - 1]})`}
+                stroke={color}
+                strokeWidth={2.5}
+                dot={(props) => {
+                  const { cx, cy, payload } = props
+                  if (!wOvers.has(payload.over) || payload.over === 0) {
+                    return <circle key={`nd-${n}-${payload.over}`} cx={cx} cy={cy} r={0} fill="none" />
+                  }
+                  return (
+                    <circle
+                      key={`w-${n}-${payload.over}`}
+                      cx={cx}
+                      cy={cy}
+                      r={5}
+                      fill={color}
+                      stroke="#fff"
+                      strokeWidth={1.5}
+                    />
+                  )
+                }}
+                activeDot={{ r: 4 }}
+                connectNulls
+              />
+            )
+          })}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -284,6 +314,13 @@ function MatchCard({ match }) {
     : null
   const currentScore = sc.innings ? score(deliveries, sc.innings) : null
   const needed = tgt !== null && tgt > 0 && currentScore ? tgt - currentScore.runs : null
+
+  const liveSc = sc.phase === 'scoring' && sc.innings
+    ? buildScorecard(deliveries, sc.innings)
+    : null
+  const strikerStats = liveSc?.batters.find(b => b.name === sc.striker)
+  const nsStats = liveSc?.batters.find(b => b.name === sc.nonStriker)
+  const bwlStats = liveSc?.bowlers.find(b => b.name === sc.currentBowler)
 
   const formatDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''
   const updatedAgo = () => {
@@ -342,10 +379,27 @@ function MatchCard({ match }) {
       {/* Live batsmen / bowler */}
       {sc.phase === 'scoring' && sc.striker && (
         <div className="lsc-batting">
-          <span className="lsc-batting__batter">{sc.striker} <span className="lsc-batting__star">★</span></span>
-          {sc.nonStriker && <span className="lsc-batting__batter lsc-batting__batter--ns">{sc.nonStriker}</span>}
+          <span className="lsc-batting__batter">
+            {sc.striker} <span className="lsc-batting__star">★</span>
+            {strikerStats && (
+              <span className="lsc-batting__stats">{strikerStats.runs}({strikerStats.balls})</span>
+            )}
+          </span>
+          {sc.nonStriker && (
+            <span className="lsc-batting__batter lsc-batting__batter--ns">
+              {sc.nonStriker}
+              {nsStats && (
+                <span className="lsc-batting__stats"> {nsStats.runs}({nsStats.balls})</span>
+              )}
+            </span>
+          )}
           {sc.currentBowler && (
-            <span className="lsc-batting__bowler">bowling: {sc.currentBowler}</span>
+            <span className="lsc-batting__bowler">
+              {sc.currentBowler}
+              {bwlStats && (
+                <span className="lsc-batting__stats"> {formatOvers(bwlStats.legalBalls)}-{bwlStats.runs}-{bwlStats.wickets}</span>
+              )}
+            </span>
           )}
         </div>
       )}

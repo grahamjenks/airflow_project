@@ -242,6 +242,20 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     return pins
   }, [deliveries, innings, overNum, prevOverBowler])
 
+  // All bowling-side players for the fielder picker, keeper first
+  const fielderGroups = useMemo(() => {
+    const sqd = squad[sqBowlingTeam] || []
+    if (!sqd.length) return null
+    const keepers = sqd.filter(p => p.role === 'Wicket-keeper').map(p => p.name)
+    const rest    = sqd.filter(p => p.role !== 'Wicket-keeper').map(p => p.name)
+    const groups = []
+    if (keepers.length) groups.push({ label: 'Wicket-keeper', names: keepers })
+    if (rest.length)    groups.push({ label: 'Fielders', names: rest })
+    return groups.length ? groups : null
+  }, [squad, sqBowlingTeam])
+
+  const fielderNames = useMemo(() => (squad[sqBowlingTeam] || []).map(p => p.name), [squad, sqBowlingTeam])
+
   // Bowlers grouped by role for the new-bowler picker
   const bowlerGroups = useMemo(() => {
     const sqd = squad[sqBowlingTeam] || []
@@ -453,6 +467,12 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     } else {
       setUiMode('normal')
     }
+  }
+
+  // ─── Swap batters ─────────────────────────────────────────────────────────────
+
+  const handleSwapBatters = () => {
+    onChange({ deliveries, scorecardState: { ...scorecardState, striker: nonStriker, nonStriker: striker } })
   }
 
   // ─── Retirement ───────────────────────────────────────────────────────────────
@@ -864,6 +884,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
             <div className="sc-entry__actions">
               <button className="sc-btn sc-btn--undo" onClick={handleUndo} disabled={!deliveries.length || deliveries[deliveries.length - 1]?.innings !== innings}>↩ Undo</button>
+              <button className="sc-btn sc-btn--swap" onClick={handleSwapBatters} title="Swap striker / non-striker">⇄ Swap</button>
               <button className="sc-btn sc-btn--retire" onClick={() => { setRetireForm(DEFAULT_RETIRE_FORM); setUiMode('retireBatsman') }}>Retire</button>
               <button className="sc-btn sc-btn--end" onClick={handleEndInnings}>{endBtnLabel}</button>
             </div>
@@ -925,8 +946,14 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             </div>
             {['Caught', 'Stumped', 'Run Out'].includes(wicketForm.type) && (
               <div className="form-group">
-                <label>Fielder</label>
-                <input type="text" placeholder="Fielder name" value={wicketForm.fielder} onChange={e => setWicketForm(f => ({ ...f, fielder: e.target.value }))} />
+                <label>{wicketForm.type === 'Stumped' ? 'Wicket-keeper' : 'Fielder'}</label>
+                <PlayerPicker
+                  names={fielderNames}
+                  groups={fielderGroups}
+                  value={wicketForm.fielder}
+                  onChange={v => setWicketForm(f => ({ ...f, fielder: v }))}
+                  placeholder="Select fielder…"
+                />
               </div>
             )}
             <div className="form-group">

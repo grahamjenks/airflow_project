@@ -1,82 +1,29 @@
 # Cricket Statistics Tracker
 
-A modern React UI for capturing and viewing cricket statistics.
+A React app for ball-by-ball cricket scoring with live scores and statistics.
 
 ## Features
 
-- **Match Details**: Record match information including teams, venue, format, and toss details
-- **Batting Statistics**: Track player batting performance with runs, balls, strike rate, boundaries, and dismissal information
-- **Bowling Statistics**: Record bowling figures including overs, maidens, runs, wickets, economy rate, average, and strike rate
-- **Statistics View**: View comprehensive statistics summary with calculated totals and exportable data
-- **Modern UI**: Beautiful, responsive design with gradient themes and smooth animations
+- **Live Scoring** — ball-by-ball scoring with extras, wickets, no-balls, wides, and retirements
+- **Scorecards** — real-time batting and bowling scorecards derived from deliveries
+- **Statistics** — run rate by over, fall of wickets, extras breakdown, worm chart
+- **Live Scores** — public feed of in-progress matches with worm chart and scorecard
+- **Player Stats** — career batting and bowling aggregates across all matches
+- **Teams** — manage squads with player roles (keeper, bowler, all-rounder, batter)
+- **Cloud Sync** — auto-saves to Supabase; falls back to localStorage if unconfigured
+
+## Tech Stack
+
+- React 18 + Vite
+- Supabase (PostgreSQL + auth)
+- Recharts
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
-
-### Installation
-
-1. Navigate to the cricket-ui directory:
-```bash
-cd cricket-ui
-```
-
-2. Install dependencies:
 ```bash
 npm install
-```
-
-3. Start the development server:
-```bash
+cp .env.example .env   # add your Supabase credentials
 npm run dev
 ```
 
-The app will open in your browser at `http://localhost:3000`
-
-### Building for Production
-
-To create a production build:
-```bash
-npm run build
-```
-
-To preview the production build:
-```bash
-npm run preview
-```
-
-## Usage
-
-1. **Start by entering Match Details** - Fill in information about the match
-2. **Add Batting Statistics** - Record individual player batting performances
-3. **Add Bowling Statistics** - Record individual bowler figures
-4. **View Statistics** - See a comprehensive summary and export data as JSON
-
-## Technology Stack
-
-- React 18
-- Vite
-- CSS3 (Modern styling with gradients and animations)
-
-## Project Structure
-
-```
-cricket-ui/
-├── src/
-│   ├── components/
-│   │   ├── MatchDetails.jsx
-│   │   ├── BattingStats.jsx
-│   │   ├── BowlingStats.jsx
-│   │   └── StatisticsView.jsx
-│   ├── App.jsx
-│   ├── App.css
-│   ├── main.jsx
-│   └── index.css
-├── index.html
-├── package.json
-└── vite.config.js
-```
-
+See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for database setup and [DEPLOYMENT.md](./DEPLOYMENT.md) for production.
