@@ -5,6 +5,13 @@ const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit W
 
 const ordinal = n => ['1st', '2nd', '3rd', '4th'][n - 1] || `${n}th`
 
+function defaultBattingTeam(matchData) {
+  const { team1, team2, tossWinner, tossDecision } = matchData || {}
+  if (!tossWinner || !tossDecision || !team1 || !team2) return team1 || ''
+  if (tossDecision === 'Bat') return tossWinner
+  return tossWinner === team1 ? team2 : team1
+}
+
 // ─── Pure stat derivations ────────────────────────────────────────────────────
 
 function computeScore(deliveries, innings) {
@@ -142,7 +149,7 @@ function PlayerPicker({ names = [], value, onChange, placeholder, className, pin
           )}
           <optgroup label={pinnedNames.length > 0 ? 'All bowlers' : 'Squad'}>
             {names.filter(n => !pinnedSet.has(n)).map(n => (
-              <option key={n} value={n}>
+              <option key={n} value={n} disabled={disabledSet.has(n)}>
                 {n}
               </option>
             ))}
@@ -175,7 +182,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const noBallPenalty = matchData?.noBallPenalty ?? 1
 
   const [setupForm, setSetupForm] = useState({
-    battingTeam: matchData?.team1 || '',
+    battingTeam: defaultBattingTeam(matchData),
     striker: '', nonStriker: '', bowler: '',
   })
 
@@ -660,17 +667,17 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           </div>
           <div className="form-group">
             <label>Opener (on strike)</label>
-            <PlayerPicker names={setupBatterNames} value={setupForm.striker} onChange={v => setSetupForm(f => ({ ...f, striker: v }))} placeholder="Select opener…" className="sc-setup__input" />
+            <PlayerPicker names={setupBatterNames} value={setupForm.striker} onChange={v => setSetupForm(f => ({ ...f, striker: v }))} placeholder="Select opener…" className="sc-setup__input" disabledNames={setupForm.nonStriker ? [setupForm.nonStriker] : []} />
           </div>
           <div className="form-group">
             <label>Opener (non-strike)</label>
-            <PlayerPicker names={setupBatterNames} value={setupForm.nonStriker} onChange={v => setSetupForm(f => ({ ...f, nonStriker: v }))} placeholder="Select opener…" className="sc-setup__input" />
+            <PlayerPicker names={setupBatterNames} value={setupForm.nonStriker} onChange={v => setSetupForm(f => ({ ...f, nonStriker: v }))} placeholder="Select opener…" className="sc-setup__input" disabledNames={setupForm.striker ? [setupForm.striker] : []} />
           </div>
           <div className="form-group">
             <label>Opening Bowler</label>
             <PlayerPicker names={setupBowlerNames} groups={setupBowlerGroups} value={setupForm.bowler} onChange={v => setSetupForm(f => ({ ...f, bowler: v }))} placeholder="Select bowler…" className="sc-setup__input" />
           </div>
-          <button type="submit" className="sc-btn sc-btn--primary" disabled={!setupForm.striker.trim() || !setupForm.nonStriker.trim() || !setupForm.bowler.trim()}>
+          <button type="submit" className="sc-btn sc-btn--primary" disabled={!setupForm.striker.trim() || !setupForm.nonStriker.trim() || !setupForm.bowler.trim() || setupForm.striker.trim() === setupForm.nonStriker.trim()}>
             Start Innings
           </button>
         </form>
