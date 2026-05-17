@@ -136,25 +136,6 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
       <h2>Match Information</h2>
       <form onSubmit={handleSubmit} className="match-form">
 
-        <div className="form-group form-group--noball">
-          <label>No-Ball Penalty</label>
-          <div className="noball-options">
-            {[1, 2].map(n => (
-              <label key={n} className={`noball-option${formData.noBallPenalty === n ? ' noball-option--active' : ''}`}>
-                <input
-                  type="radio"
-                  name="noBallPenalty"
-                  value={n}
-                  checked={formData.noBallPenalty === n}
-                  onChange={() => setFormData(prev => ({ ...prev, noBallPenalty: n }))}
-                />
-                {n} run{n > 1 ? 's' : ''}
-              </label>
-            ))}
-          </div>
-          <small className="form-hint">Most formats: 1 run · Some leagues: 2 runs</small>
-        </div>
-
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="matchType">Match Type</label>
@@ -251,6 +232,25 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
               <option value="Bowl">Bowl</option>
             </select>
           </div>
+        </div>
+
+        <div className="form-group form-group--noball">
+          <label>No-Ball Penalty</label>
+          <div className="noball-options">
+            {[1, 2].map(n => (
+              <label key={n} className={`noball-option${formData.noBallPenalty === n ? ' noball-option--active' : ''}`}>
+                <input
+                  type="radio"
+                  name="noBallPenalty"
+                  value={n}
+                  checked={formData.noBallPenalty === n}
+                  onChange={() => setFormData(prev => ({ ...prev, noBallPenalty: n }))}
+                />
+                {n} run{n > 1 ? 's' : ''}
+              </label>
+            ))}
+          </div>
+          <small className="form-hint">Most formats: 1 run · Some leagues: 2 runs</small>
         </div>
 
         <button type="submit" className="submit-button">
