@@ -27,7 +27,7 @@ function KpiCard({ label, value, sub, color }) {
   )
 }
 
-function StatisticsView({ matchData, battingStats, bowlingStats, onReset, onSave }) {
+function StatisticsView({ matchData, battingStats, bowlingStats, onReset, onSave, onViewScorecard }) {
   const calculateBattingTotals = () => {
     if (battingStats.length === 0) return null
     const totals = battingStats.reduce((acc, stat) => {
@@ -119,13 +119,27 @@ function StatisticsView({ matchData, battingStats, bowlingStats, onReset, onSave
     )
   }
 
+  const team1 = matchData?.team1 || ''
+  const team2 = matchData?.team2 || ''
+  const teams = [team1, team2].filter(Boolean)
+
+  const battingByTeam = teams.map(team => battingStats.filter(s => s.team === team))
+  const bowlingByTeam = teams.map(team => bowlingStats.filter(s => s.team === team))
+
   return (
     <div className="statistics-view">
       <div className="view-header">
-        <h2>Match Statistics Summary</h2>
-        <button onClick={onReset} className="reset-button">
-          Start New Match
-        </button>
+        <h2>Match Statistics</h2>
+        <div className="view-header__actions">
+          {onViewScorecard && (
+            <button onClick={onViewScorecard} className="export-button">
+              ← Back to Scorecard
+            </button>
+          )}
+          <button onClick={onReset} className="reset-button">
+            Start New Match
+          </button>
+        </div>
       </div>
 
       {matchData && (
@@ -181,157 +195,134 @@ function StatisticsView({ matchData, battingStats, bowlingStats, onReset, onSave
       )}
 
       <div className="stats-sections">
-        {/* Batting Section */}
+        {/* Batting Section — split by team */}
         <div className="stats-section">
-          <h3>Batting Statistics</h3>
-          {battingStats.length === 0 ? (
-            <p className="no-data">No batting statistics recorded yet.</p>
-          ) : (
-            <>
-              {battingChartData.length > 0 && (
-                <div className="chart-container">
-                  <h4 className="chart-title">Runs Scored</h4>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={battingChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fill: '#4a5568', fontSize: 13 }} />
-                      <YAxis tick={{ fill: '#4a5568', fontSize: 13 }} />
-                      <Tooltip content={<CustomBattingTooltip />} />
-                      <Bar dataKey="Runs" radius={[6, 6, 0, 0]}>
-                        {battingChartData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+          <h3>Batting</h3>
+          {battingStats.length === 0 && <p className="no-data">No batting statistics recorded yet.</p>}
 
-              {dismissalData.length > 0 && (
-                <div className="chart-row">
-                  <div className="chart-container chart-half">
-                    <h4 className="chart-title">Dismissal Breakdown</h4>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <PieChart>
-                        <Pie
-                          data={dismissalData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={55}
-                          outerRadius={90}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {dismissalData.map((entry, i) => (
-                            <Cell key={i} fill={DISMISSAL_COLORS[entry.name] || COLORS[i % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(v, n) => [v, n]} />
-                        <Legend iconType="circle" />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
+          {battingChartData.length > 0 && (
+            <div className="chart-container">
+              <h4 className="chart-title">Runs Scored</h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={battingChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fill: '#4a5568', fontSize: 13 }} />
+                  <YAxis tick={{ fill: '#4a5568', fontSize: 13 }} />
+                  <Tooltip content={<CustomBattingTooltip />} />
+                  <Bar dataKey="Runs" radius={[6, 6, 0, 0]}>
+                    {battingChartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
-                  <div className="stats-table-container chart-half">
-                    <table className="stats-table">
-                      <thead>
-                        <tr>
-                          <th>Player</th>
-                          <th>Team</th>
-                          <th>R</th>
-                          <th>B</th>
-                          <th>SR</th>
-                          <th>4s</th>
-                          <th>6s</th>
-                          <th>Dismissal</th>
+          {(teams.length > 0 ? teams : ['All']).map((team, ti) => {
+            const stats = teams.length > 0 ? battingByTeam[ti] : battingStats
+            if (!stats.length) return null
+            return (
+              <div key={team} className="team-stats-block">
+                <h4 className="team-stats-label">{team} — Batting</h4>
+                <div className="stats-table-container">
+                  <table className="stats-table">
+                    <thead>
+                      <tr><th>Player</th><th>Inn</th><th>R</th><th>B</th><th>SR</th><th>4s</th><th>6s</th><th>Dismissal</th></tr>
+                    </thead>
+                    <tbody>
+                      {stats.map((stat, i) => (
+                        <tr key={i}>
+                          <td>{stat.playerName}</td>
+                          <td>{stat.innings}</td>
+                          <td><strong>{stat.runs}</strong></td>
+                          <td>{stat.balls}</td>
+                          <td>{stat.strikeRate}</td>
+                          <td>{stat.fours}</td>
+                          <td>{stat.sixes}</td>
+                          <td>
+                            <span className={`dismissal-badge dismissal-${(stat.dismissalType || '').toLowerCase().replace(/ /g, '-')}`}>
+                              {stat.dismissalType}
+                            </span>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {battingStats.map((stat, index) => (
-                          <tr key={index}>
-                            <td>{stat.playerName}</td>
-                            <td>{stat.team}</td>
-                            <td><strong>{stat.runs}</strong></td>
-                            <td>{stat.balls}</td>
-                            <td>{stat.strikeRate}</td>
-                            <td>{stat.fours}</td>
-                            <td>{stat.sixes}</td>
-                            <td>
-                              <span className={`dismissal-badge dismissal-${(stat.dismissalType || '').toLowerCase().replace(' ', '-')}`}>
-                                {stat.dismissalType}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </>
+              </div>
+            )
+          })}
+
+          {dismissalData.length > 0 && (
+            <div className="chart-container chart-half" style={{ marginTop: '1.5rem' }}>
+              <h4 className="chart-title">Dismissal Breakdown</h4>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={dismissalData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
+                    {dismissalData.map((entry, i) => (
+                      <Cell key={i} fill={DISMISSAL_COLORS[entry.name] || COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v, n) => [v, n]} />
+                  <Legend iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
 
-        {/* Bowling Section */}
+        {/* Bowling Section — split by team */}
         <div className="stats-section">
-          <h3>Bowling Statistics</h3>
-          {bowlingStats.length === 0 ? (
-            <p className="no-data">No bowling statistics recorded yet.</p>
-          ) : (
-            <>
-              {bowlingChartData.length > 0 && (
-                <div className="chart-container">
-                  <h4 className="chart-title">Wickets Taken</h4>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={bowlingChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fill: '#4a5568', fontSize: 13 }} />
-                      <YAxis allowDecimals={false} tick={{ fill: '#4a5568', fontSize: 13 }} />
-                      <Tooltip content={<CustomBowlingTooltip />} />
-                      <Bar dataKey="Wickets" radius={[6, 6, 0, 0]}>
-                        {bowlingChartData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[(i + 4) % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+          <h3>Bowling</h3>
+          {bowlingStats.length === 0 && <p className="no-data">No bowling statistics recorded yet.</p>}
 
-              <div className="stats-table-container">
-                <table className="stats-table">
-                  <thead>
-                    <tr>
-                      <th>Bowler</th>
-                      <th>Team</th>
-                      <th>O</th>
-                      <th>M</th>
-                      <th>R</th>
-                      <th>W</th>
-                      <th>Econ</th>
-                      <th>Avg</th>
-                      <th>SR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bowlingStats.map((stat, index) => (
-                      <tr key={index}>
-                        <td>{stat.playerName}</td>
-                        <td>{stat.team}</td>
-                        <td>{stat.overs}</td>
-                        <td>{stat.maidens}</td>
-                        <td>{stat.runs}</td>
-                        <td><strong>{stat.wickets}</strong></td>
-                        <td>{stat.economy}</td>
-                        <td>{stat.average}</td>
-                        <td>{stat.strikeRate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+          {bowlingChartData.length > 0 && (
+            <div className="chart-container">
+              <h4 className="chart-title">Wickets Taken</h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={bowlingChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fill: '#4a5568', fontSize: 13 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: '#4a5568', fontSize: 13 }} />
+                  <Tooltip content={<CustomBowlingTooltip />} />
+                  <Bar dataKey="Wickets" radius={[6, 6, 0, 0]}>
+                    {bowlingChartData.map((_, i) => <Cell key={i} fill={COLORS[(i + 4) % COLORS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
+
+          {(teams.length > 0 ? teams : ['All']).map((team, ti) => {
+            const stats = teams.length > 0 ? bowlingByTeam[ti] : bowlingStats
+            if (!stats.length) return null
+            return (
+              <div key={team} className="team-stats-block">
+                <h4 className="team-stats-label">{team} — Bowling</h4>
+                <div className="stats-table-container">
+                  <table className="stats-table">
+                    <thead>
+                      <tr><th>Bowler</th><th>Inn</th><th>O</th><th>M</th><th>R</th><th>W</th><th>Econ</th><th>Avg</th><th>SR</th></tr>
+                    </thead>
+                    <tbody>
+                      {stats.map((stat, i) => (
+                        <tr key={i}>
+                          <td>{stat.playerName}</td>
+                          <td>{stat.innings}</td>
+                          <td>{stat.overs}</td>
+                          <td>{stat.maidens}</td>
+                          <td>{stat.runs}</td>
+                          <td><strong>{stat.wickets}</strong></td>
+                          <td>{stat.economy}</td>
+                          <td>{stat.average}</td>
+                          <td>{stat.strikeRate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 

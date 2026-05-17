@@ -21,6 +21,27 @@
   font-size: 1.75rem;
 }
 
+.view-header__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.team-stats-block {
+  margin-top: 1.25rem;
+}
+
+.team-stats-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #4a5568;
+  background: #f7fafc;
+  border-left: 3px solid #667eea;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0 6px 6px 0;
+}
+
 .reset-button,
 .export-button {
   padding: 0.75rem 1.5rem;

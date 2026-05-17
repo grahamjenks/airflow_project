@@ -5,6 +5,7 @@ import StatisticsView from './components/StatisticsView'
 import SearchMatches from './components/SearchMatches'
 import TeamsView from './components/TeamsView'
 import LiveScores from './components/LiveScores'
+import PlayerStats from './components/PlayerStats'
 import { saveMatch as saveMatchToStorage } from './services/matchService'
 import { loadTeams, loadPlayers } from './services/teamService'
 import { supabase, isSupabaseConfigured, signOut } from './lib/supabase'
@@ -17,6 +18,7 @@ import './App.css'
 function deriveBattingStats(deliveries) {
   const playerMap = {}
   for (const d of deliveries) {
+    if (d.isRetirement) continue
     const key = `${d.striker}|${d.innings}|${d.battingTeam}`
     if (!playerMap[key]) {
       playerMap[key] = {
@@ -271,6 +273,10 @@ function App() {
             className={currentView === 'live' ? 'active' : ''}
             onClick={() => setCurrentView('live')}
           >Live Scores</button>
+          <button
+            className={currentView === 'playerstats' ? 'active' : ''}
+            onClick={() => setCurrentView('playerstats')}
+          >Player Stats</button>
         </nav>
       </header>
 
@@ -297,6 +303,7 @@ function App() {
             bowlingStats={bowlingStats}
             onReset={resetAll}
             onSave={saveMatch}
+            onViewScorecard={() => setCurrentView('scorecard')}
           />
         )}
         {currentView === 'search' && (
@@ -304,6 +311,9 @@ function App() {
         )}
         {currentView === 'live' && (
           <LiveScores />
+        )}
+        {currentView === 'playerstats' && (
+          <PlayerStats />
         )}
       </main>
 

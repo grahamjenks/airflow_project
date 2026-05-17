@@ -1,0 +1,143 @@
+.ps-root {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ps-page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ps-page-header h2 {
+  color: #2d3748;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.ps-match-count {
+  font-size: 0.85rem;
+  color: #a0aec0;
+}
+
+.ps-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ps-tabs {
+  display: flex;
+  background: #f7fafc;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  border: 1px solid #e2e8f0;
+}
+
+.ps-tabs button {
+  padding: 0.45rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #718096;
+  transition: all 0.15s;
+}
+
+.ps-tabs button.active {
+  background: white;
+  color: #667eea;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.ps-team-filter {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #4a5568;
+  background: white;
+  cursor: pointer;
+  outline: none;
+}
+
+.ps-table-wrap {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.ps-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.ps-table th {
+  background: #f7fafc;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #718096;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.ps-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f7fafc;
+  color: #2d3748;
+  white-space: nowrap;
+}
+
+.ps-table tbody tr:last-child td { border-bottom: none; }
+
+.ps-table tbody tr:hover td { background: #f7fafc; }
+
+.ps-row--top td { background: #faf5ff; }
+.ps-row--top:hover td { background: #f3e8ff !important; }
+
+.ps-rank {
+  color: #a0aec0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-width: 24px;
+}
+
+.ps-name { font-weight: 600; }
+
+.ps-team {
+  color: #718096;
+  font-size: 0.82rem;
+}
+
+.ps-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #718096;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ps-state--error {
+  color: #c53030;
+  background: #fff5f5;
+  border-color: #feb2b2;
+}
+
+@media (max-width: 600px) {
+  .ps-table th, .ps-table td { padding: 0.5rem; font-size: 0.8rem; }
+}
