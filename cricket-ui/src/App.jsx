@@ -4,6 +4,7 @@ import LiveScorecard from './components/LiveScorecard'
 import StatisticsView from './components/StatisticsView'
 import SearchMatches from './components/SearchMatches'
 import TeamsView from './components/TeamsView'
+import LiveScores from './components/LiveScores'
 import { saveMatch as saveMatchToStorage } from './services/matchService'
 import { loadTeams, loadPlayers } from './services/teamService'
 import { supabase, isSupabaseConfigured, signOut } from './lib/supabase'
@@ -266,6 +267,10 @@ function App() {
             className={currentView === 'search' ? 'active' : ''}
             onClick={() => setCurrentView('search')}
           >Search Matches</button>
+          <button
+            className={currentView === 'live' ? 'active' : ''}
+            onClick={() => setCurrentView('live')}
+          >Live Scores</button>
         </nav>
       </header>
 
@@ -296,6 +301,9 @@ function App() {
         )}
         {currentView === 'search' && (
           <SearchMatches onLoadMatch={handleLoadMatch} />
+        )}
+        {currentView === 'live' && (
+          <LiveScores />
         )}
       </main>
 
