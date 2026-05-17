@@ -302,9 +302,120 @@
   border-top: 1px solid #f7fafc;
 }
 
+/* ── Scorecard toggle ── */
+.lsc-scorecard-toggle {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1.25rem;
+  background: #f7fafc;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #667eea;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+}
+
+.lsc-scorecard-toggle:hover { background: #edf2f7; }
+
+/* ── Inline scorecard ── */
+.lsc-scorecard {
+  border-top: 1px solid #e2e8f0;
+}
+
+.lsc-sc-innings {
+  padding: 0.75rem 1.25rem 1rem;
+  border-bottom: 1px solid #f7fafc;
+}
+
+.lsc-sc-innings:last-child { border-bottom: none; }
+
+.lsc-sc-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.lsc-sc-team {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.lsc-sc-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a0aec0;
+}
+
+.lsc-sc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.lsc-sc-table thead th {
+  padding: 0.3rem 0.4rem;
+  text-align: right;
+  color: #a0aec0;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.lsc-sc-th--name { text-align: left; }
+
+.lsc-sc-table tbody td {
+  padding: 0.35rem 0.4rem;
+  text-align: right;
+  border-bottom: 1px solid #f7fafc;
+  color: #4a5568;
+}
+
+.lsc-sc-table tbody tr:last-child td { border-bottom: none; }
+
+.lsc-sc-td--name {
+  text-align: left;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lsc-sc-td--how {
+  text-align: left;
+  color: #718096;
+  font-size: 0.75rem;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lsc-sc-tr--live td { background: #f0f3ff; }
+
+.lsc-sc-star { color: #667eea; }
+
+.lsc-sc-muted { color: #a0aec0; }
+
+.lsc-sc-table--bowling { margin-top: 0.5rem; }
+
 @media (max-width: 480px) {
   .lsc-score__team { min-width: 90px; }
   .lsc-card__header { padding: 0.9rem 1rem 0.3rem; }
   .lsc-scores, .lsc-batting, .lsc-target, .lsc-worm { padding-left: 1rem; padding-right: 1rem; }
   .lsc-score--batting { margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
+  .lsc-sc-innings { padding: 0.75rem 1rem 1rem; }
+  .lsc-sc-td--how { display: none; }
 }

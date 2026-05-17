@@ -613,6 +613,16 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
       })
       .map(p => p.name)
 
+    const setupSqd = squad[setupBowlingTeam] || []
+    const setupBowlerGroups = setupSqd.length ? (() => {
+      const specialists = setupSqd.filter(p => p.role === 'Bowler' || p.role === 'All-rounder').map(p => p.name)
+      const others = setupSqd.filter(p => p.role !== 'Bowler' && p.role !== 'All-rounder').map(p => p.name)
+      const groups = []
+      if (specialists.length) groups.push({ label: 'Bowlers & All-rounders', names: specialists })
+      if (others.length) groups.push({ label: 'Batters', names: others })
+      return groups.length ? groups : null
+    })() : null
+
     return (
       <div className="sc-setup">
         <h2>{ordinal(innings)} Innings Setup</h2>
@@ -650,7 +660,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           </div>
           <div className="form-group">
             <label>Opening Bowler</label>
-            <PlayerPicker names={setupBowlerNames} value={setupForm.bowler} onChange={v => setSetupForm(f => ({ ...f, bowler: v }))} placeholder="Select bowler…" className="sc-setup__input" />
+            <PlayerPicker names={setupBowlerNames} groups={setupBowlerGroups} value={setupForm.bowler} onChange={v => setSetupForm(f => ({ ...f, bowler: v }))} placeholder="Select bowler…" className="sc-setup__input" />
           </div>
           <button type="submit" className="sc-btn sc-btn--primary" disabled={!setupForm.striker.trim() || !setupForm.nonStriker.trim() || !setupForm.bowler.trim()}>
             Start Innings
@@ -832,7 +842,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             <div className="sc-entry__label">Extras</div>
             <div className="sc-entry__row sc-entry__row--extras">
               <button className="sc-btn sc-btn--extra" onClick={() => setUiMode('wideRuns')}>Wide</button>
-              <button className="sc-btn sc-btn--extra" onClick={() => recordDelivery({ extraRuns: 1, extraType: 'noball' })}>No Ball</button>
+              <button className="sc-btn sc-btn--extra" onClick={() => setUiMode('noBallRuns')}>No Ball</button>
               <button className="sc-btn sc-btn--extra" onClick={() => { setPendingExtra('bye'); setUiMode('extraRuns') }}>Bye</button>
               <button className="sc-btn sc-btn--extra" onClick={() => { setPendingExtra('legbye'); setUiMode('extraRuns') }}>Leg Bye</button>
             </div>
@@ -847,10 +857,30 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
         {uiMode === 'wideRuns' && (
           <div className="sc-prompt">
-            <div className="sc-prompt__title">Wide — how many runs?</div>
+            <div className="sc-prompt__title">Wide — total extras?</div>
+            <div className="sc-prompt__subtitle">1 = just wide · 5 = wide to boundary</div>
             <div className="sc-entry__row">
-              {[1, 2].map(r => (
+              {[1, 2, 3, 4, 5].map(r => (
                 <button key={r} className="sc-btn sc-btn--ball" onClick={() => { recordDelivery({ extraRuns: r, extraType: 'wide' }); setUiMode('normal') }}>{r}</button>
+              ))}
+            </div>
+            <button className="sc-btn sc-btn--cancel" onClick={() => setUiMode('normal')}>Cancel</button>
+          </div>
+        )}
+
+        {uiMode === 'noBallRuns' && (
+          <div className="sc-prompt">
+            <div className="sc-prompt__title">No Ball — runs off the bat?</div>
+            <div className="sc-prompt__subtitle">+1 no-ball penalty added automatically</div>
+            <div className="sc-entry__row">
+              {[0, 1, 2, 3, 4, 6].map(r => (
+                <button
+                  key={r}
+                  className={`sc-btn sc-btn--ball${r === 4 ? ' sc-btn--four' : r === 6 ? ' sc-btn--six' : ''}`}
+                  onClick={() => { recordDelivery({ batRuns: r, extraRuns: 1, extraType: 'noball' }); setUiMode('normal') }}
+                >
+                  {r === 0 ? '·' : r}
+                </button>
               ))}
             </div>
             <button className="sc-btn sc-btn--cancel" onClick={() => setUiMode('normal')}>Cancel</button>

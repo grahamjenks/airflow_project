@@ -274,6 +274,7 @@ function MatchCard({ match }) {
   const deliveries = match.deliveries || []
   const sc = match.scorecard_state || {}
   const isLive = LIVE_PHASES.has(sc.phase)
+  const [showScorecard, setShowScorecard] = useState(false)
 
   const inningsNums = [...new Set(deliveries.map(d => d.innings))].sort()
   const scores = inningsNums.map(n => ({ n, team: battingTeam(deliveries, n), ...score(deliveries, n) }))
@@ -351,6 +352,25 @@ function MatchCard({ match }) {
 
       {/* Worm */}
       <WormChart deliveries={deliveries} matchOvers={md.overs} />
+
+      {/* Scorecard toggle */}
+      {inningsNums.length > 0 && (
+        <>
+          <button
+            className="lsc-scorecard-toggle"
+            onClick={() => setShowScorecard(s => !s)}
+          >
+            {showScorecard ? '▲ Hide Scorecard' : '▼ Full Scorecard'}
+          </button>
+          {showScorecard && (
+            <div className="lsc-scorecard">
+              {inningsNums.map(n => (
+                <ScorecardInnings key={n} deliveries={deliveries} innings={n} sc={sc} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

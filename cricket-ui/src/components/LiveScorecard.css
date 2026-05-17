@@ -88,7 +88,7 @@
 
 .sc-setup__prev-scores { margin-bottom: 1.25rem; }
 
-/* Player select in setup form */
+/* Player select/input in setup form */
 .sc-setup__input {
   padding: 0.65rem 0.9rem;
   border: 2px solid #e2e8f0;
@@ -104,6 +104,16 @@
 .sc-setup__input:focus {
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+}
+
+select.sc-setup__input {
+  padding-right: 2.5rem;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 0.9rem center;
+  background-size: 14px 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  min-height: 48px;
 }
 
 /* ── Batsmen ───────────────────────────────────────────────────────────────── */
@@ -425,6 +435,13 @@
   text-align: center;
 }
 
+.sc-prompt__subtitle {
+  font-size: 0.78rem;
+  color: #718096;
+  text-align: center;
+  margin-top: -0.35rem;
+}
+
 .sc-prompt__input {
   width: 100%;
   padding: 0.85rem 1rem;
@@ -521,15 +538,19 @@
 /* Player select in prompts */
 .sc-prompt__select {
   width: 100%;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 2.75rem 0.9rem 1rem;
   font-size: 1rem;
   border: 2px solid #667eea;
   border-radius: 10px;
   outline: none;
   box-sizing: border-box;
   font-family: inherit;
-  background: white;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center;
+  background-size: 16px 16px;
+  -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
+  min-height: 52px;
 }
 
 .sc-prompt__select:focus {
@@ -676,4 +697,21 @@
   .sc-batsman__score { font-size: 1.3rem; }
 
   .sc-history__bowler { display: none; }
+
+  /* Prevent iOS auto-zoom on focus (requires font-size >= 16px) */
+  .sc-prompt__select,
+  .sc-prompt__input,
+  select.sc-setup__input,
+  .sc-setup__input,
+  .sc-setup .form-group select,
+  .sc-setup .form-group input,
+  .sc-entry .form-group select,
+  .sc-entry .form-group input,
+  .sc-prompt .form-group select,
+  .sc-prompt .form-group input {
+    font-size: 16px;
+  }
+
+  .sc-prompt__select { min-height: 56px; padding: 0.9rem 3rem 0.9rem 1rem; }
+  select.sc-setup__input { min-height: 52px; }
 }
