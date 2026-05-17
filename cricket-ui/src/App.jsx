@@ -3,8 +3,10 @@ import MatchDetails from './components/MatchDetails'
 import LiveScorecard from './components/LiveScorecard'
 import StatisticsView from './components/StatisticsView'
 import SearchMatches from './components/SearchMatches'
+import TeamsView from './components/TeamsView'
 import { saveMatch as saveMatchToStorage } from './services/matchService'
-import { clearToken, getToken, isApiConfigured } from './lib/apiClient'
+import { loadTeams, loadPlayers } from './services/teamService'
+import { supabase, isSupabaseConfigured, signOut } from './lib/supabase'
 import { logger } from './lib/logger'
 import AuthModal from './components/AuthModal'
 import './App.css'
@@ -113,8 +115,37 @@ function App() {
   const [currentView, setCurrentView] = useState('match')
   const [currentMatchId, setCurrentMatchId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [token, setToken] = useState(() => (isApiConfigured() ? getToken() : null))
+  const [session, setSession] = useState(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [teams, setTeams] = useState([])
+  const [squad, setSquad] = useState({})
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s))
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Load teams whenever session is established
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !session) return
+    loadTeams().then(setTeams)
+  }, [session])
+
+  // Load squad players when matchData teams change
+  useEffect(() => {
+    if (!matchData || !teams.length) return
+    const load = async () => {
+      const t1 = teams.find(t => t.id === matchData.team1Id || t.name === matchData.team1)
+      const t2 = teams.find(t => t.id === matchData.team2Id || t.name === matchData.team2)
+      const next = {}
+      if (t1) next[matchData.team1] = await loadPlayers(t1.id)
+      if (t2) next[matchData.team2] = await loadPlayers(t2.id)
+      setSquad(next)
+    }
+    load()
+  }, [matchData, teams])
 
   const battingStats = useMemo(() => deriveBattingStats(deliveries), [deliveries])
   const bowlingStats = useMemo(() => deriveBowlingStats(deliveries), [deliveries])
@@ -181,30 +212,30 @@ function App() {
     setCurrentView('match')
   }
 
-  const handleAuthSuccess = (t) => { setToken(t); setShowAuthModal(false) }
-  const handleLogout = () => { clearToken(); setToken(null) }
+  const handleAuthSuccess = (s) => { setSession(s); setShowAuthModal(false) }
+  const handleLogout = async () => { await signOut(); setSession(null) }
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>🏏 Cricket Statistics Tracker</h1>
         <div className="storage-status">
-          {isApiConfigured() ? (
-            token
-              ? <span className="status-online" title="Connected to API">☁️ API Storage Active</span>
-              : <span className="status-offline" title="API configured but not logged in">🔒 Login Required</span>
+          {isSupabaseConfigured() ? (
+            session
+              ? <span className="status-online" title="Connected to Supabase">☁️ Cloud Storage Active</span>
+              : <span className="status-offline" title="Sign in to sync to cloud">🔒 Sign In to Sync</span>
           ) : (
             <span className="status-offline" title="Using local storage only">💾 Local Storage Only</span>
           )}
           {isSaving && <span className="saving-indicator">Saving...</span>}
         </div>
 
-        {isApiConfigured() && !token && (
+        {isSupabaseConfigured() && !session && (
           <div className="auth-header-actions">
             <button className="sign-in-btn" onClick={() => setShowAuthModal(true)}>Sign In</button>
           </div>
         )}
-        {isApiConfigured() && token && (
+        {isSupabaseConfigured() && session && (
           <div className="auth-header-actions">
             <button className="sign-out-btn" onClick={handleLogout}>Sign Out</button>
           </div>
@@ -226,6 +257,10 @@ function App() {
             disabled={!matchData}
           >View Statistics</button>
           <button
+            className={currentView === 'teams' ? 'active' : ''}
+            onClick={() => setCurrentView('teams')}
+          >Teams</button>
+          <button
             className={currentView === 'search' ? 'active' : ''}
             onClick={() => setCurrentView('search')}
           >Search Matches</button>
@@ -234,7 +269,7 @@ function App() {
 
       <main className="app-main">
         {currentView === 'match' && (
-          <MatchDetails onSubmit={handleMatchSubmit} matchData={matchData} />
+          <MatchDetails onSubmit={handleMatchSubmit} matchData={matchData} teams={teams} />
         )}
         {currentView === 'scorecard' && (
           <LiveScorecard
@@ -242,7 +277,11 @@ function App() {
             deliveries={deliveries}
             scorecardState={scorecardState}
             onChange={handleScorecardChange}
+            squad={squad}
           />
+        )}
+        {currentView === 'teams' && (
+          <TeamsView onTeamsChanged={setTeams} />
         )}
         {currentView === 'view' && (
           <StatisticsView

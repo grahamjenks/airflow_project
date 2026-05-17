@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { login as apiLogin, register as apiRegister } from '../lib/apiClient'
+import { signIn, signUp } from '../lib/supabase'
 import './AuthModal.css'
 
 export default function AuthModal({ onSuccess, onClose }) {
@@ -27,10 +27,10 @@ export default function AuthModal({ onSuccess, onClose }) {
 
     setLoading(true)
     try {
-      const token = mode === 'login'
-        ? await apiLogin(username, password)
-        : await apiRegister(username, password)
-      onSuccess(token)
+      const session = mode === 'login'
+        ? await signIn(username, password)
+        : await signUp(username, password)
+      onSuccess(session)
     } catch (err) {
       setError(err.message || (mode === 'login' ? 'Login failed' : 'Registration failed'))
     } finally {
@@ -65,13 +65,13 @@ export default function AuthModal({ onSuccess, onClose }) {
 
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
           <label>
-            Username
+            Email
             <input
-              type="text"
+              type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              autoComplete="username"
+              placeholder="Enter your email"
+              autoComplete="email"
               required
               autoFocus
             />

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import './MatchDetails.css'
 
-function MatchDetails({ onSubmit, matchData }) {
+function MatchDetails({ onSubmit, matchData, teams = [] }) {
   const [formData, setFormData] = useState(matchData || {
     matchType: '',
     team1: '',
+    team1Id: '',
     team2: '',
+    team2Id: '',
     venue: '',
     date: '',
     format: 'T20',
@@ -19,13 +21,66 @@ function MatchDetails({ onSubmit, matchData }) {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      overs: name === 'format' ? (value === 'T20' ? 20 : value === 'ODI' ? 50 : 90) : prev.overs
+      overs: name === 'format' ? (value === 'T20' ? 20 : value === 'ODI' ? 50 : 90) : prev.overs,
+    }))
+  }
+
+  // When a team is chosen from the dropdown, store both name and id
+  const handleTeamSelect = (slot, teamId) => {
+    const team = teams.find(t => t.id === teamId)
+    setFormData(prev => ({
+      ...prev,
+      [slot]: team ? team.name : teamId,
+      [`${slot}Id`]: team ? team.id : '',
     }))
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
     onSubmit(formData)
+  }
+
+  const hasTeams = teams.length > 0
+
+  const TeamInput = ({ slot, label }) => {
+    const nameField = slot          // 'team1' or 'team2'
+    const idField = `${slot}Id`     // 'team1Id' or 'team2Id'
+
+    if (hasTeams) {
+      return (
+        <div className="form-group">
+          <label htmlFor={slot}>{label}</label>
+          <select
+            id={slot}
+            name={slot}
+            value={formData[idField] || ''}
+            onChange={e => handleTeamSelect(slot, e.target.value)}
+            required
+          >
+            <option value="">Select team…</option>
+            {teams.map(t => (
+              <option key={t.id} value={t.id}>{t.name}{t.shortName ? ` (${t.shortName})` : ''}</option>
+            ))}
+          </select>
+        </div>
+      )
+    }
+
+    return (
+      <div className="form-group">
+        <label htmlFor={slot}>{label}</label>
+        <input
+          type="text"
+          id={slot}
+          name={nameField}
+          value={formData[nameField]}
+          onChange={handleChange}
+          placeholder="Enter team name"
+          required
+        />
+        <small className="form-hint">Add teams in the Teams tab to use dropdowns</small>
+      </div>
+    )
   }
 
   return (
@@ -35,9 +90,9 @@ function MatchDetails({ onSubmit, matchData }) {
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="matchType">Match Type</label>
-            <select 
-              id="matchType" 
-              name="matchType" 
+            <select
+              id="matchType"
+              name="matchType"
               value={formData.matchType}
               onChange={handleChange}
               required
@@ -53,9 +108,9 @@ function MatchDetails({ onSubmit, matchData }) {
 
           <div className="form-group">
             <label htmlFor="format">Format</label>
-            <select 
-              id="format" 
-              name="format" 
+            <select
+              id="format"
+              name="format"
               value={formData.format}
               onChange={handleChange}
               required
@@ -68,31 +123,8 @@ function MatchDetails({ onSubmit, matchData }) {
         </div>
 
         <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="team1">Team 1</label>
-            <input
-              type="text"
-              id="team1"
-              name="team1"
-              value={formData.team1}
-              onChange={handleChange}
-              placeholder="Enter team name"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="team2">Team 2</label>
-            <input
-              type="text"
-              id="team2"
-              name="team2"
-              value={formData.team2}
-              onChange={handleChange}
-              placeholder="Enter team name"
-              required
-            />
-          </div>
+          <TeamInput slot="team1" label="Team 1" />
+          <TeamInput slot="team2" label="Team 2" />
         </div>
 
         <div className="form-row">
@@ -125,9 +157,9 @@ function MatchDetails({ onSubmit, matchData }) {
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="tossWinner">Toss Winner</label>
-            <select 
-              id="tossWinner" 
-              name="tossWinner" 
+            <select
+              id="tossWinner"
+              name="tossWinner"
               value={formData.tossWinner}
               onChange={handleChange}
             >
@@ -139,9 +171,9 @@ function MatchDetails({ onSubmit, matchData }) {
 
           <div className="form-group">
             <label htmlFor="tossDecision">Toss Decision</label>
-            <select 
-              id="tossDecision" 
-              name="tossDecision" 
+            <select
+              id="tossDecision"
+              name="tossDecision"
               value={formData.tossDecision}
               onChange={handleChange}
             >
@@ -161,4 +193,3 @@ function MatchDetails({ onSubmit, matchData }) {
 }
 
 export default MatchDetails
-

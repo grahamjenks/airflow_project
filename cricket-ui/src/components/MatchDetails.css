@@ -93,3 +93,9 @@
   }
 }
 
+
+.form-hint {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 0.2rem;
+}

@@ -1,109 +1,138 @@
 import { logger } from '../lib/logger'
-import { api, isApiConfigured, getToken } from '../lib/apiClient'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-/**
- * Match Service - Handles all match data operations
- * Falls back to localStorage if API is not configured / unavailable
- */
+const getUserId = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  return user.id
+}
 
-const isUuid = (value) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+// Map Supabase snake_case columns → app camelCase shape
+const mapRow = (row) => ({
+  id: row.id,
+  matchData: row.match_data,
+  battingStats: row.batting_stats || [],
+  bowlingStats: row.bowling_stats || [],
+  deliveries: row.deliveries || [],
+  scorecardState: row.scorecard_state || {},
+  lastUpdated: row.updated_at || row.created_at,
+})
 
-// Load all matches
+// ─── Supabase CRUD ───────────────────────────────────────────────────────────
+
+async function supabaseLoadMatches() {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(200)
+  if (error) throw error
+  return (data || []).map(mapRow)
+}
+
+async function supabaseSaveMatch(match) {
+  const payload = {
+    match_data: match.matchData,
+    batting_stats: match.battingStats || [],
+    bowling_stats: match.bowlingStats || [],
+    deliveries: match.deliveries || [],
+    scorecard_state: match.scorecardState || {},
+  }
+
+  // Update if valid UUID, otherwise insert
+  if (match.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(match.id)) {
+    const { data, error } = await supabase
+      .from('matches')
+      .update(payload)
+      .eq('id', match.id)
+      .select()
+      .single()
+    if (error) throw error
+    return data.id
+  }
+
+  const userId = await getUserId()
+  const { data, error } = await supabase
+    .from('matches')
+    .insert({ ...payload, user_id: userId })
+    .select()
+    .single()
+  if (error) throw error
+  return data.id
+}
+
+async function supabaseDeleteMatch(matchId) {
+  const { error } = await supabase.from('matches').delete().eq('id', matchId)
+  if (error) throw error
+  return true
+}
+
+async function supabaseLoadMatchById(matchId) {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('id', matchId)
+    .single()
+  if (error) throw error
+  return mapRow(data)
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export const loadMatches = async () => {
-  if (isApiConfigured() && getToken()) {
+  if (isSupabaseConfigured()) {
     try {
-      const data = await api.listMatches()
-      return (Array.isArray(data) ? data : []).map(match => ({
-        id: match.id,
-        matchData: match.matchData,
-        battingStats: match.battingStats || [],
-        bowlingStats: match.bowlingStats || [],
-        deliveries: match.deliveries || [],
-        scorecardState: match.scorecardState || {},
-        lastUpdated: match.updated_at || match.created_at
-      }))
+      return await supabaseLoadMatches()
     } catch (error) {
-      logger.error('storage.api.load_matches_failed', { error })
+      logger.error('storage.supabase.load_matches_failed', { error })
       return loadMatchesFromLocalStorage()
     }
   }
-
   return loadMatchesFromLocalStorage()
 }
 
-// Save a match (create or update)
 export const saveMatch = async (match) => {
-  if (isApiConfigured() && getToken()) {
+  if (isSupabaseConfigured()) {
     try {
-      const payload = {
-        id: isUuid(match.id) ? match.id : undefined,
-        matchData: match.matchData,
-        battingStats: match.battingStats || [],
-        bowlingStats: match.bowlingStats || [],
-        deliveries: match.deliveries || [],
-        scorecardState: match.scorecardState || {},
-      }
-
-      if (isUuid(match.id)) {
-        const updated = await api.updateMatch(match.id, payload)
-        return updated?.id || match.id
-      }
-
-      const created = await api.createMatch(payload)
-      return created?.id || saveMatchToLocalStorage(match)
+      return await supabaseSaveMatch(match)
     } catch (error) {
-      logger.error('storage.api.save_match_failed', { error, matchId: match?.id })
+      logger.error('storage.supabase.save_match_failed', { error, matchId: match?.id })
       return saveMatchToLocalStorage(match)
     }
   }
-
   return saveMatchToLocalStorage(match)
 }
 
-// Delete a match
 export const deleteMatch = async (matchId) => {
-  if (isApiConfigured() && getToken() && isUuid(matchId)) {
+  if (isSupabaseConfigured()) {
     try {
-      await api.deleteMatch(matchId)
-      return true
+      return await supabaseDeleteMatch(matchId)
     } catch (error) {
-      logger.error('storage.api.delete_match_failed', { error, matchId })
+      logger.error('storage.supabase.delete_match_failed', { error, matchId })
       return deleteMatchFromLocalStorage(matchId)
     }
   }
-
   return deleteMatchFromLocalStorage(matchId)
 }
 
-// Load a single match by ID
 export const loadMatchById = async (matchId) => {
-  if (isApiConfigured() && getToken() && isUuid(matchId)) {
+  if (isSupabaseConfigured()) {
     try {
-      const data = await api.getMatch(matchId)
-      return {
-        id: data.id,
-        matchData: data.matchData,
-        battingStats: data.battingStats || [],
-        bowlingStats: data.bowlingStats || [],
-        deliveries: data.deliveries || [],
-        scorecardState: data.scorecardState || {},
-        lastUpdated: data.updated_at || data.created_at,
-      }
+      return await supabaseLoadMatchById(matchId)
     } catch (error) {
-      logger.error('storage.api.load_match_failed', { error, matchId })
+      logger.error('storage.supabase.load_match_failed', { error, matchId })
       return loadMatchFromLocalStorage(matchId)
     }
   }
-
   return loadMatchFromLocalStorage(matchId)
 }
 
-// ==================== localStorage Fallback Functions ====================
+// ─── localStorage fallback ────────────────────────────────────────────────────
 
 const loadMatchesFromLocalStorage = () => {
   try {
-    const savedMatches = localStorage.getItem('cricket-matches')
-    const parsed = savedMatches ? JSON.parse(savedMatches) : []
+    const saved = localStorage.getItem('cricket-matches')
+    const parsed = saved ? JSON.parse(saved) : []
     return Array.isArray(parsed) ? parsed : []
   } catch (error) {
     logger.error('storage.localStorage.load_failed', { error })
@@ -113,26 +142,15 @@ const loadMatchesFromLocalStorage = () => {
 
 const saveMatchToLocalStorage = (match) => {
   try {
-    const savedMatches = localStorage.getItem('cricket-matches')
-    let matches = savedMatches ? JSON.parse(savedMatches) : []
+    const saved = localStorage.getItem('cricket-matches')
+    let matches = saved ? JSON.parse(saved) : []
     if (!Array.isArray(matches)) matches = []
-
-    if (match.id && !match.id.startsWith('match-')) {
-      // Update existing match
-      matches = matches.map(m => m.id === match.id ? match : m)
-      localStorage.setItem('cricket-matches', JSON.stringify(matches))
-      return match.id
-    } else {
-      // Add new match
-      const id = match.id || `match-${Date.now()}`
-      const newMatch = {
-        ...match,
-        id
-      }
-      matches.push(newMatch)
-      localStorage.setItem('cricket-matches', JSON.stringify(matches))
-      return newMatch.id
-    }
+    const id = match.id || `match-${Date.now()}`
+    const existing = matches.findIndex(m => m.id === match.id)
+    if (existing >= 0) matches[existing] = { ...match, id }
+    else matches.push({ ...match, id })
+    localStorage.setItem('cricket-matches', JSON.stringify(matches))
+    return id
   } catch (error) {
     logger.error('storage.localStorage.save_failed', { error })
     return null
@@ -141,11 +159,13 @@ const saveMatchToLocalStorage = (match) => {
 
 const deleteMatchFromLocalStorage = (matchId) => {
   try {
-    const savedMatches = localStorage.getItem('cricket-matches')
-    if (savedMatches) {
-      const matches = JSON.parse(savedMatches)
-      const filtered = (Array.isArray(matches) ? matches : []).filter(m => m?.id !== matchId)
-      localStorage.setItem('cricket-matches', JSON.stringify(filtered))
+    const saved = localStorage.getItem('cricket-matches')
+    if (saved) {
+      const matches = JSON.parse(saved)
+      localStorage.setItem(
+        'cricket-matches',
+        JSON.stringify((Array.isArray(matches) ? matches : []).filter(m => m?.id !== matchId))
+      )
     }
     return true
   } catch (error) {
@@ -156,16 +176,12 @@ const deleteMatchFromLocalStorage = (matchId) => {
 
 const loadMatchFromLocalStorage = (matchId) => {
   try {
-    const savedMatches = localStorage.getItem('cricket-matches')
-    if (savedMatches) {
-      const matches = JSON.parse(savedMatches)
-      if (!Array.isArray(matches)) return null
-      return matches.find(m => m?.id === matchId) || null
-    }
-    return null
+    const saved = localStorage.getItem('cricket-matches')
+    if (!saved) return null
+    const matches = JSON.parse(saved)
+    return Array.isArray(matches) ? (matches.find(m => m?.id === matchId) || null) : null
   } catch (error) {
     logger.error('storage.localStorage.load_match_failed', { error, matchId })
     return null
   }
 }
-

@@ -74,11 +74,22 @@ function Ball({ d }) {
 
 const DEFAULT_WICKET_FORM = { type: 'Bowled', fielder: '', outBatsman: '' }
 
-export default function LiveScorecard({ matchData, deliveries, scorecardState, onChange }) {
+// squad shape: { [teamName]: [{name, role}] }
+export default function LiveScorecard({ matchData, deliveries, scorecardState, onChange, squad = {} }) {
   const {
     phase, innings, battingTeam, bowlingTeam,
     striker, nonStriker, currentBowler, overNum, legalBallsInOver,
   } = scorecardState
+
+  // Derive squad lists from the passed squad prop for autocomplete
+  const currentBattingTeam = battingTeam || setupForm.battingTeam
+  const currentBowlingTeam = bowlingTeam || (
+    currentBattingTeam === matchData?.team1 ? matchData?.team2 : matchData?.team1
+  )
+  const batterNames = (squad[currentBattingTeam] || []).map(p => p.name)
+  const bowlerNames = (squad[currentBowlingTeam] || [])
+    .filter(p => p.role !== 'Batsman')
+    .map(p => p.name)
 
   // Derive initial uiMode from state (handles page refresh mid-prompt)
   const [uiMode, setUiMode] = useState(() => {
@@ -316,11 +327,15 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               {teams.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
+          {batterNames.length > 0 && <datalist id="dl-batters">{batterNames.map(n => <option key={n} value={n} />)}</datalist>}
+          {bowlerNames.length > 0 && <datalist id="dl-bowlers">{bowlerNames.map(n => <option key={n} value={n} />)}</datalist>}
+
           <div className="form-group">
             <label>Opener (on strike)</label>
             <input
               type="text" value={setupForm.striker} required
               placeholder="Batsman name"
+              list={batterNames.length > 0 ? 'dl-batters' : undefined}
               onChange={e => setSetupForm(f => ({ ...f, striker: e.target.value }))}
             />
           </div>
@@ -329,6 +344,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             <input
               type="text" value={setupForm.nonStriker} required
               placeholder="Batsman name"
+              list={batterNames.length > 0 ? 'dl-batters' : undefined}
               onChange={e => setSetupForm(f => ({ ...f, nonStriker: e.target.value }))}
             />
           </div>
@@ -337,6 +353,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             <input
               type="text" value={setupForm.bowler} required
               placeholder="Bowler name"
+              list={bowlerNames.length > 0 ? 'dl-bowlers' : undefined}
               onChange={e => setSetupForm(f => ({ ...f, bowler: e.target.value }))}
             />
           </div>
@@ -556,11 +573,13 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'newBatsman' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">New Batsman In</div>
+            {batterNames.length > 0 && <datalist id="dl-batters-prompt">{batterNames.map(n => <option key={n} value={n} />)}</datalist>}
             <input
               className="sc-prompt__input"
               type="text" autoFocus
               placeholder="Batsman name"
               value={newBatsmanInput}
+              list={batterNames.length > 0 ? 'dl-batters-prompt' : undefined}
               onChange={e => setNewBatsmanInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && confirmNewBatsman()}
             />
@@ -575,11 +594,13 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'newBowler' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">Over {overNum + 1} — New Bowler</div>
+            {bowlerNames.length > 0 && <datalist id="dl-bowlers-prompt">{bowlerNames.map(n => <option key={n} value={n} />)}</datalist>}
             <input
               className="sc-prompt__input"
               type="text" autoFocus
               placeholder="Bowler name"
               value={newBowlerInput}
+              list={bowlerNames.length > 0 ? 'dl-bowlers-prompt' : undefined}
               onChange={e => setNewBowlerInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && confirmNewBowler()}
             />
