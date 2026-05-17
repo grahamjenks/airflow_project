@@ -172,6 +172,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const maxOvers = isTestFormat ? Infinity : (matchData?.overs || 20)
   const maxInnings = isTestFormat ? 4 : 2
   const followOnThreshold = matchData?.matchType === 'First Class' ? 150 : 200
+  const noBallPenalty = matchData?.noBallPenalty ?? 1
 
   const [setupForm, setSetupForm] = useState({
     battingTeam: matchData?.team1 || '',
@@ -871,13 +872,13 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'noBallRuns' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">No Ball — runs off the bat?</div>
-            <div className="sc-prompt__subtitle">+1 no-ball penalty added automatically</div>
+            <div className="sc-prompt__subtitle">+{noBallPenalty} no-ball penalty added automatically</div>
             <div className="sc-entry__row">
               {[0, 1, 2, 3, 4, 6].map(r => (
                 <button
                   key={r}
                   className={`sc-btn sc-btn--ball${r === 4 ? ' sc-btn--four' : r === 6 ? ' sc-btn--six' : ''}`}
-                  onClick={() => { recordDelivery({ batRuns: r, extraRuns: 1, extraType: 'noball' }); setUiMode('normal') }}
+                  onClick={() => { recordDelivery({ batRuns: r, extraRuns: noBallPenalty, extraType: 'noball' }); setUiMode('normal') }}
                 >
                   {r === 0 ? '·' : r}
                 </button>

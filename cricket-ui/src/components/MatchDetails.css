@@ -100,6 +100,58 @@
   margin-top: 0.2rem;
 }
 
+/* ── No-ball penalty selector ── */
+.form-group--noball {
+  padding: 1.1rem 1.25rem;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  gap: 0.6rem;
+}
+
+.noball-options {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.noball-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4a5568;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.noball-option input[type="radio"] {
+  accent-color: #667eea;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* override the generic .form-group input rule for the hidden radio */
+.form-group--noball input[type="radio"] {
+  padding: 0;
+  border: none;
+}
+
+.noball-option--active {
+  border-color: #667eea;
+  background: #f0f3ff;
+  color: #2d3748;
+}
+
 .no-teams-prompt {
   text-align: center;
   padding: 3rem 2rem;
