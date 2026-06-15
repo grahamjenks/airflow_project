@@ -15,7 +15,7 @@ import './App.css'
 
 // ─── Derive batting stats from ball-by-ball deliveries ───────────────────────
 
-function deriveBattingStats(deliveries) {
+export function deriveBattingStats(deliveries) {
   const playerMap = {}
   for (const d of deliveries) {
     if (d.isRetirement) continue
@@ -47,7 +47,7 @@ function deriveBattingStats(deliveries) {
 
 // ─── Derive bowling stats from ball-by-ball deliveries ────────────────────────
 
-function deriveBowlingStats(deliveries) {
+export function deriveBowlingStats(deliveries) {
   const bowlerMap = {}
   const overMap = {}
 
