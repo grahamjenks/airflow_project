@@ -111,6 +111,7 @@ const DEFAULT_SCORECARD_STATE = {
   legalBallsInOver: 0,
   followOnTaken: false,
   matchResult: '',
+  isFreeHit: false,
 }
 
 function App() {

@@ -199,6 +199,9 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
               ← Back to Scorecard
             </button>
           )}
+          <button onClick={() => window.print()} className="print-button">
+            Print Scorecard
+          </button>
           <button onClick={onReset} className="reset-button">
             Start New Match
           </button>
@@ -496,6 +499,119 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
           </button>
         </div>
       </div>
+
+      {/* ── Print-only scorecard ── */}
+      <PrintScorecard matchData={matchData} battingStats={battingStats} bowlingStats={bowlingStats} fallOfWickets={fallOfWickets} extrasData={extrasData} />
+    </div>
+  )
+}
+
+function fmtDismissal(stat) {
+  const d = stat.dismissalType
+  if (!d || d === 'Not Out') return 'not out'
+  if (d === 'Bowled') return `b ${stat.bowler || ''}`
+  if (d === 'LBW') return `lbw b ${stat.bowler || ''}`
+  if (d === 'Caught') return `c ${stat.fielder ? stat.fielder + ' ' : ''}b ${stat.bowler || ''}`
+  if (d === 'Stumped') return `st ${stat.fielder ? stat.fielder + ' ' : ''}b ${stat.bowler || ''}`
+  if (d === 'Hit Wicket') return `hit wkt b ${stat.bowler || ''}`
+  if (d === 'Run Out') return `run out${stat.fielder ? ` (${stat.fielder})` : ''}`
+  if (d === 'Retired Hurt') return 'ret hurt'
+  return d
+}
+
+function PrintScorecard({ matchData, battingStats, bowlingStats, fallOfWickets, extrasData }) {
+  const inningNums = [...new Set([...battingStats.map(s => s.innings), ...bowlingStats.map(s => s.innings)])].sort()
+  return (
+    <div className="print-only">
+      <h2>{matchData?.team1 || 'Team 1'} vs {matchData?.team2 || 'Team 2'}</h2>
+      <div className="print-scorecard-meta">
+        {matchData?.venue && <span>{matchData.venue} · </span>}
+        {matchData?.date && <span>{new Date(matchData.date).toLocaleDateString()} · </span>}
+        {matchData?.matchType && <span>{matchData.matchType}</span>}
+      </div>
+
+      {inningNums.map(n => {
+        const batting = battingStats.filter(s => s.innings === n)
+        const bowling = bowlingStats.filter(s => s.innings === n)
+        const battingTeam = batting[0]?.team || ''
+        const fow = (fallOfWickets || []).find(f => f.innings === n)
+        const extras = (extrasData || []).find(e => e.innings === n)
+        const totalRuns = batting.reduce((s, b) => s + (Number(b.runs) || 0), 0)
+        const totalBalls = batting.reduce((s, b) => s + (Number(b.balls) || 0), 0)
+        const wickets = batting.filter(b => b.dismissalType && b.dismissalType !== 'Not Out' && b.dismissalType !== 'Retired Hurt').length
+        const extrasTotal = extras ? extras.total : 0
+        return (
+          <div key={n}>
+            <h3>{battingTeam} — {n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`} Innings</h3>
+
+            <table className="print-scorecard-table">
+              <thead>
+                <tr><th>Batter</th><th>Dismissal</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr>
+              </thead>
+              <tbody>
+                {batting.map((s, i) => (
+                  <tr key={i}>
+                    <td>{s.playerName}</td>
+                    <td>{fmtDismissal(s)}</td>
+                    <td><strong>{s.runs}</strong></td>
+                    <td>{s.balls}</td>
+                    <td>{s.fours}</td>
+                    <td>{s.sixes}</td>
+                    <td>{s.strikeRate}</td>
+                  </tr>
+                ))}
+                {extras && (
+                  <tr>
+                    <td>Extras</td>
+                    <td style={{ fontSize: '8pt' }}>
+                      {extras.wides > 0 ? `wd ${extras.wides}` : ''}
+                      {extras.noBalls > 0 ? ` nb ${extras.noBalls}` : ''}
+                      {extras.byes > 0 ? ` b ${extras.byes}` : ''}
+                      {extras.legByes > 0 ? ` lb ${extras.legByes}` : ''}
+                    </td>
+                    <td colSpan={5}><strong>{extrasTotal}</strong></td>
+                  </tr>
+                )}
+                <tr>
+                  <td colSpan={2}><strong>Total</strong></td>
+                  <td colSpan={5}><strong>{totalRuns + extrasTotal}/{wickets}</strong> ({totalBalls > 0 ? `${Math.floor(totalBalls / 6)}.${totalBalls % 6} ov` : '—'})</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {fow && fow.wickets.length > 0 && (
+              <div className="print-fow">
+                <strong>Fall of wickets:</strong>{' '}
+                {fow.wickets.map((w, i) => (
+                  <span key={i}>{w.wicket}-{w.runs} ({w.batsman}, {w.over}){i < fow.wickets.length - 1 ? ', ' : ''}</span>
+                ))}
+              </div>
+            )}
+
+            {bowling.length > 0 && (
+              <table className="print-scorecard-table">
+                <thead>
+                  <tr><th>Bowler</th><th>O</th><th>M</th><th>R</th><th>W</th><th>Wd</th><th>Nb</th><th>Econ</th></tr>
+                </thead>
+                <tbody>
+                  {bowling.map((s, i) => (
+                    <tr key={i}>
+                      <td>{s.playerName}</td>
+                      <td>{s.overs}</td>
+                      <td>{s.maidens}</td>
+                      <td>{s.runs}</td>
+                      <td><strong>{s.wickets}</strong></td>
+                      <td>{s.wides || 0}</td>
+                      <td>{s.noBalls || 0}</td>
+                      <td>{s.economy}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

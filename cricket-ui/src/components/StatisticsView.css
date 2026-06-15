@@ -341,3 +341,57 @@
     padding: 0.65rem 0.5rem;
   }
 }
+
+/* ── Print button ────────────────────────────────────────────────────────────── */
+.print-button {
+  background: #4a5568;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.print-button:hover { background: #2d3748; }
+
+/* ── Print-only scorecard ───────────────────────────────────────────────────── */
+.print-only { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  .print-only, .print-only * { visibility: visible; }
+  .print-only {
+    display: block !important;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 1.5cm;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10pt;
+    color: #000;
+  }
+  .print-only h2 { font-size: 14pt; margin-bottom: 0.2cm; }
+  .print-only h3 { font-size: 12pt; margin: 0.5cm 0 0.2cm; border-bottom: 1px solid #000; }
+  .print-only h4 { font-size: 10pt; margin: 0.3cm 0 0.1cm; }
+  .print-scorecard-meta { font-size: 9pt; color: #444; margin-bottom: 0.5cm; }
+  .print-scorecard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.4cm;
+    page-break-inside: avoid;
+  }
+  .print-scorecard-table th,
+  .print-scorecard-table td {
+    border: 1px solid #999;
+    padding: 2pt 4pt;
+    text-align: left;
+    font-size: 9pt;
+  }
+  .print-scorecard-table th { background: #e8e8e8; font-weight: bold; }
+  .print-scorecard-table td:not(:first-child) { text-align: center; }
+  .print-fow { font-size: 9pt; margin: 0.2cm 0; }
+  .print-fow span { margin-right: 0.4cm; }
+  .print-extras { font-size: 9pt; margin: 0.2cm 0; }
+}

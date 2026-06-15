@@ -143,6 +143,30 @@ function computeTarget(deliveries, currentInnings, currentBattingTeam) {
   return opposing - own + 1
 }
 
+// ─── Partnership / over-limit helpers ────────────────────────────────────────
+
+function computeCurrentPartnership(deliveries, innings) {
+  const inningsDels = deliveries.filter(d => d.innings === innings)
+  let start = 0
+  for (let i = inningsDels.length - 1; i >= 0; i--) {
+    if (inningsDels[i].wicket || inningsDels[i].isRetirement) { start = i + 1; break }
+  }
+  const dels = inningsDels.slice(start).filter(d => !d.isRetirement)
+  return {
+    runs: dels.reduce((s, d) => s + d.batRuns + d.extraRuns, 0),
+    balls: dels.filter(d => d.isLegalDelivery).length,
+  }
+}
+
+function getOversPerBowler(deliveries, innings) {
+  const map = {}
+  for (const d of deliveries) {
+    if (d.innings !== innings || d.isRetirement || !d.bowler) continue
+    if (d.isLegalDelivery) map[d.bowler] = (map[d.bowler] || 0) + 1
+  }
+  return map
+}
+
 // ─── Ball icon ────────────────────────────────────────────────────────────────
 
 function Ball({ d }) {
@@ -331,7 +355,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const {
     phase, innings, battingTeam, bowlingTeam,
     striker, nonStriker, currentBowler, overNum, legalBallsInOver,
-    followOnTaken, matchResult, retiredBatters = [],
+    followOnTaken, matchResult, retiredBatters = [], isFreeHit = false,
   } = scorecardState
 
   const isTestFormat = matchData?.format === 'Test' || matchData?.matchType === 'Test' || matchData?.matchType === 'First Class'
@@ -391,6 +415,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const [newBowlerInput, setNewBowlerInput] = useState('')
   const [needBowlerAfterBatsman, setNeedBowlerAfterBatsman] = useState(false)
   const [showFullScorecard, setShowFullScorecard] = useState(false)
+  const [milestone, setMilestone] = useState(null)
 
   const score = useMemo(() => computeScore(deliveries, innings), [deliveries, innings])
   const strikerStats = useMemo(() => getBatsmanStats(deliveries, innings, striker), [deliveries, innings, striker])
@@ -472,7 +497,26 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
   const ballsRemaining = !isTestFormat ? maxOvers * 6 - score.legalBalls : null
   const rrr = (required !== null && required > 0 && ballsRemaining !== null && ballsRemaining > 0)
     ? ((required / ballsRemaining) * 6).toFixed(2) : null
+  const crr = score.legalBalls > 0 ? (score.runs / (score.legalBalls / 6)).toFixed(2) : null
   const isChasingInnings = innings === maxInnings
+
+  const partnership = useMemo(() => computeCurrentPartnership(deliveries, innings), [deliveries, innings])
+
+  const maxOversPerBowler = isTestFormat ? Infinity : Math.floor(maxOvers / 5)
+  const oversPerBowler = useMemo(() => getOversPerBowler(deliveries, innings), [deliveries, innings])
+  const atLimitBowlers = useMemo(() =>
+    Object.entries(oversPerBowler)
+      .filter(([_, balls]) => balls >= maxOversPerBowler * 6)
+      .map(([name]) => name),
+    [oversPerBowler, maxOversPerBowler]
+  )
+
+  // Auto-dismiss milestone notification
+  useEffect(() => {
+    if (!milestone) return
+    const id = setTimeout(() => setMilestone(null), 5000)
+    return () => clearTimeout(id)
+  }, [milestone])
 
   // Retired hurt batters available to return (current innings only)
   const canReturnBatters = retiredBatters.filter(rb => rb.innings === innings && rb.type === 'Hurt')
@@ -515,6 +559,16 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     const isLegal = extraType !== 'wide' && extraType !== 'noball'
     const totalRuns = batRuns + extraRuns
 
+    // Pre-delivery stats for milestone detection
+    const preStrikerRuns = getBatsmanStats(deliveries, innings, striker).runs
+    const preBowlerWickets = getBowlerFigures(deliveries, innings, currentBowler).wickets
+
+    // Compute free-hit state for the NEXT delivery
+    const nextIsFreeHit = isTestFormat ? false
+      : extraType === 'noball' ? true
+      : (isFreeHit && extraType === 'wide') ? true
+      : false
+
     const delivery = {
       innings, overNum, bowler: currentBowler,
       striker, nonStriker, battingTeam, bowlingTeam,
@@ -524,13 +578,38 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     const newDeliveries = [...deliveries, delivery]
     const newScore = computeScore(newDeliveries, innings)
 
+    // ── Milestone detection ───────────────────────────────────────────────────
+    const postStrikerRuns = getBatsmanStats(newDeliveries, innings, striker).runs
+    for (const m of [50, 100, 150, 200]) {
+      if (preStrikerRuns < m && postStrikerRuns >= m) {
+        setMilestone(`${striker} reaches ${m}!`)
+        break
+      }
+    }
+    if (wicket && wicket.type !== 'Run Out' && wicket.type !== 'Retired Hurt') {
+      const postBowlerWickets = getBowlerFigures(newDeliveries, innings, currentBowler).wickets
+      if (postBowlerWickets === 5 && preBowlerWickets === 4) {
+        setMilestone(`${currentBowler} — 5-wicket haul!`)
+      } else {
+        const bowlerLegalDels = newDeliveries.filter(
+          d => d.innings === innings && !d.isRetirement && d.bowler === currentBowler && d.isLegalDelivery
+        )
+        if (bowlerLegalDels.length >= 3) {
+          const last3 = bowlerLegalDels.slice(-3)
+          if (last3.every(d => d.wicket && d.wicket.type !== 'Run Out' && d.wicket.type !== 'Retired Hurt')) {
+            setMilestone(`HAT-TRICK! ${currentBowler}!`)
+          }
+        }
+      }
+    }
+
     // Win by wickets in chasing innings
     if (isChasingInnings && target !== null) {
       const wicketsInInnings = newDeliveries.filter(d => d.innings === innings && d.wicket).length
       const wicketsRemaining = 10 - wicketsInInnings
       if (newScore.runs >= target) {
         const result = `${battingTeam} won by ${wicketsRemaining} wicket${wicketsRemaining !== 1 ? 's' : ''}`
-        onChange({ deliveries: newDeliveries, scorecardState: { ...scorecardState, phase: 'ended', matchResult: result } })
+        onChange({ deliveries: newDeliveries, scorecardState: { ...scorecardState, isFreeHit: false, phase: 'ended', matchResult: result } })
         setUiMode('normal')
         return
       }
@@ -583,7 +662,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               ...scorecardState,
               striker: newStriker, nonStriker: newNonStriker,
               overNum: newOverNum, legalBallsInOver: newLegal,
-              phase: 'ended',
+              isFreeHit: false, phase: 'ended',
               matchResult: `${team1} won by an innings and ${margin} run${margin !== 1 ? 's' : ''}`,
             },
           })
@@ -605,7 +684,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             ...scorecardState,
             striker: newStriker, nonStriker: newNonStriker,
             overNum: newOverNum, legalBallsInOver: newLegal,
-            phase: 'ended', matchResult: result,
+            isFreeHit: false, phase: 'ended', matchResult: result,
           },
         })
         setUiMode('normal')
@@ -618,7 +697,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           ...scorecardState,
           striker: newStriker, nonStriker: newNonStriker,
           overNum: newOverNum, legalBallsInOver: newLegal,
-          phase: 'inningsBreak',
+          isFreeHit: false, phase: 'inningsBreak',
         },
       })
       setUiMode('normal')
@@ -627,7 +706,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
     onChange({
       deliveries: newDeliveries,
-      scorecardState: { ...scorecardState, striker: newStriker, nonStriker: newNonStriker, overNum: newOverNum, legalBallsInOver: newLegal },
+      scorecardState: { ...scorecardState, striker: newStriker, nonStriker: newNonStriker, overNum: newOverNum, legalBallsInOver: newLegal, isFreeHit: nextIsFreeHit },
     })
 
     if (wicket) {
@@ -701,6 +780,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           ...scorecardState,
           striker: prev.striker,
           nonStriker: prev.nonStriker,
+          isFreeHit: false,
           retiredBatters: retiredBatters.filter(rb => rb.name !== prev.retiredBatter),
         },
       })
@@ -716,6 +796,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         striker: prev.striker, nonStriker: prev.nonStriker,
         currentBowler: prev.bowler,
         overNum: Math.floor(legalTotal / 6), legalBallsInOver: legalTotal % 6,
+        isFreeHit: false,
       },
     })
     setUiMode('normal')
@@ -956,6 +1037,13 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
   return (
     <div className="sc-root">
+      {milestone && (
+        <div className="sc-milestone" role="status">
+          {milestone}
+          <button className="sc-milestone__close" onClick={() => setMilestone(null)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
       {/* ── Scoreboard ── */}
       <div className="sc-board">
         <div className="sc-board__team">{battingTeam} · {ordinal(innings)} Innings</div>
@@ -963,14 +1051,15 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           {score.runs}<span className="sc-board__sep">/</span>{score.wickets}
         </div>
         <div className="sc-board__overs">
-          ({score.overs}.{score.balls} ov{!isTestFormat && ballsRemaining !== null ? ` · ${ballsRemaining} balls rem` : ''})
+          ({score.overs}.{score.balls} ov{crr ? ` · CRR ${crr}` : ''}{!isTestFormat && ballsRemaining !== null ? ` · ${ballsRemaining} balls rem` : ''})
         </div>
         {isChasingInnings && target !== null && target > 0 && (
           <div className="sc-board__target">
-            <span>Target {target}</span>
-            <span>Need {required}</span>
-            {rrr && <span>RRR {rrr}</span>}
-            {ballsRemaining !== null && <span>{ballsRemaining} balls</span>}
+            <div className="sc-board__target-metric"><span className="sc-board__target-label">Target</span><span className="sc-board__target-val">{target}</span></div>
+            <div className="sc-board__target-metric"><span className="sc-board__target-label">Need</span><span className="sc-board__target-val">{required}</span></div>
+            {crr && <div className="sc-board__target-metric"><span className="sc-board__target-label">CRR</span><span className="sc-board__target-val">{crr}</span></div>}
+            {rrr && <div className="sc-board__target-metric sc-board__target-metric--rrr"><span className="sc-board__target-label">RRR</span><span className="sc-board__target-val">{rrr}</span></div>}
+            {ballsRemaining !== null && <div className="sc-board__target-metric"><span className="sc-board__target-label">Balls</span><span className="sc-board__target-val">{ballsRemaining}</span></div>}
           </div>
         )}
         {isChasingInnings && target !== null && target <= 0 && (
@@ -1017,6 +1106,14 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
           </div>
         </div>
       </div>
+
+      {/* ── Partnership & Free Hit ── */}
+      {striker && nonStriker && (
+        <div className="sc-partnership">
+          Partnership: <strong>{partnership.runs}</strong> runs ({partnership.balls} balls)
+        </div>
+      )}
+      {isFreeHit && <div className="sc-free-hit">⚡ FREE HIT! ⚡</div>}
 
       {/* ── Bowler + current over ── */}
       <div className="sc-over">
@@ -1111,10 +1208,17 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'wicket' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">Wicket!</div>
+            {isFreeHit && (
+              <div className="sc-prompt__note sc-prompt__note--freehit">⚡ Free hit — only Run Out allowed</div>
+            )}
             <div className="form-group">
               <label>Dismissal</label>
-              <select value={wicketForm.type} onChange={e => setWicketForm(f => ({ ...f, type: e.target.value }))}>
-                {DISMISSAL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              <select
+                value={isFreeHit ? 'Run Out' : wicketForm.type}
+                onChange={e => setWicketForm(f => ({ ...f, type: e.target.value }))}
+                disabled={isFreeHit}
+              >
+                {(isFreeHit ? ['Run Out'] : DISMISSAL_TYPES).map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             {['Caught', 'Stumped', 'Run Out'].includes(wicketForm.type) && (
@@ -1211,18 +1315,23 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             {prevOverBowler && (
               <div className="sc-prompt__note">{prevOverBowler} cannot bowl consecutive overs</div>
             )}
+            {!isTestFormat && atLimitBowlers.length > 0 && (
+              <div className="sc-prompt__note">
+                {atLimitBowlers.join(', ')} {atLimitBowlers.length === 1 ? 'has' : 'have'} reached the {maxOversPerBowler}-over limit
+              </div>
+            )}
             <PlayerPicker
               names={bowlerNames}
               groups={bowlerGroups}
               value={newBowlerInput}
               onChange={setNewBowlerInput}
               placeholder="Select bowler…"
-              disabledNames={prevOverBowler ? [prevOverBowler] : []}
+              disabledNames={[...(prevOverBowler ? [prevOverBowler] : []), ...atLimitBowlers]}
             />
             <button
               className="sc-btn sc-btn--primary"
               onClick={confirmNewBowler}
-              disabled={!newBowlerInput.trim() || newBowlerInput === prevOverBowler}
+              disabled={!newBowlerInput.trim() || newBowlerInput === prevOverBowler || atLimitBowlers.includes(newBowlerInput)}
             >
               Start Over
             </button>
