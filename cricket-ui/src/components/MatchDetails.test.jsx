@@ -177,9 +177,11 @@ describe('MatchDetails validation', () => {
     const team2 = screen.getByLabelText(/team 2/i)
     await user.clear(team2)
     await user.type(team2, 'Australia')
-    fireEvent.submit(container.querySelector('.match-form'))
 
-    expect(onSubmit).toHaveBeenCalledTimes(1)
+    // Error should clear live, before any resubmit
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    fireEvent.submit(container.querySelector('.match-form'))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 })
