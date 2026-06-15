@@ -17,6 +17,12 @@ export default defineConfig(({ mode }) => {
       assetsDir: 'assets',
       sourcemap: enableSourcemap,
       minify: 'esbuild'
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./src/setupTests.js'],
+      css: false,
     }
   }
 })
