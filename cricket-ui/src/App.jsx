@@ -120,6 +120,7 @@ function App() {
   const [currentView, setCurrentView] = useState('match')
   const [currentMatchId, setCurrentMatchId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
   const [session, setSession] = useState(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [teams, setTeams] = useState([])
@@ -176,12 +177,20 @@ function App() {
       }
       const savedId = await saveMatchToStorage(matchToSave)
       if (savedId && !currentMatchId) setCurrentMatchId(savedId)
+      setJustSaved(true)
     } catch (error) {
       logger.error('match.save_failed', { error, currentMatchId })
     } finally {
       setIsSaving(false)
     }
   }, [matchData, battingStats, bowlingStats, deliveries, scorecardState, currentMatchId])
+
+  // Clear the "Saved" confirmation a few seconds after it appears
+  useEffect(() => {
+    if (!justSaved) return
+    const id = setTimeout(() => setJustSaved(false), 2500)
+    return () => clearTimeout(id)
+  }, [justSaved])
 
   useEffect(() => {
     if (matchData && deliveries.length > 0) {
@@ -233,6 +242,7 @@ function App() {
             <span className="status-offline" title="Using local storage only">💾 Local Storage Only</span>
           )}
           {isSaving && <span className="saving-indicator">Saving...</span>}
+          {!isSaving && justSaved && <span className="saved-indicator">Saved ✓</span>}
         </div>
 
         {isSupabaseConfigured() && !session && (

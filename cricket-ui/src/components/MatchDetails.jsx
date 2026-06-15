@@ -32,6 +32,7 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
     team2XI: [],
   })
   const [squadData, setSquadData] = useState({})
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!formData.team1Id) return
@@ -78,6 +79,12 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target
+    if ((name === 'team1' || name === 'team2') && error) {
+      const other = name === 'team1' ? formData.team2 : formData.team1
+      const a = String(value || '').trim().toLowerCase()
+      const b = String(other || '').trim().toLowerCase()
+      if (!a || !b || a !== b) setError(null)
+    }
     if (name === 'matchType') {
       const mapped = FORMAT_BY_MATCH_TYPE[value]
       setFormData(prev => ({
@@ -96,12 +103,18 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
 
   const handleTeamSelect = (slot, teamId) => {
     const team = teams.find(t => t.id === teamId)
-    setFormData(prev => ({
-      ...prev,
-      [slot]: team ? team.name : teamId,
-      [`${slot}Id`]: team ? team.id : '',
-      [`${slot}XI`]: [],
-    }))
+    setFormData(prev => {
+      const next = {
+        ...prev,
+        [slot]: team ? team.name : teamId,
+        [`${slot}Id`]: team ? team.id : '',
+        [`${slot}XI`]: [],
+      }
+      const t1 = String(next.team1 || '').trim().toLowerCase()
+      const t2 = String(next.team2 || '').trim().toLowerCase()
+      if (!t1 || !t2 || t1 !== t2) setError(null)
+      return next
+    })
   }
 
   const toggleXIPlayer = (slot, playerName) => {
@@ -150,6 +163,13 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const t1 = String(formData.team1 || '').trim()
+    const t2 = String(formData.team2 || '').trim()
+    if (t1 && t2 && t1.toLowerCase() === t2.toLowerCase()) {
+      setError('Team 1 and Team 2 must be different.')
+      return
+    }
+    setError(null)
     onSubmit(formData)
   }
 
@@ -200,6 +220,10 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
     <div className="match-details">
       <h2>Match Information</h2>
       <form onSubmit={handleSubmit} className="match-form">
+
+        {error && (
+          <div className="form-error" role="alert">{error}</div>
+        )}
 
         <div className="form-row">
           <div className="form-group">
