@@ -158,6 +158,14 @@
   line-height: 1;
 }
 
+/* Over summary note in new-bowler prompt */
+.sc-prompt__note--over-summary {
+  color: #2b6cb0;
+  background: #ebf8ff;
+  border-color: #90cdf4;
+  font-weight: 600;
+}
+
 /* Free hit note in wicket modal */
 .sc-prompt__note--freehit {
   color: #c53030;
@@ -326,6 +334,7 @@ select.sc-setup__input {
 .sc-ball--six   { background: #fbd38d; color: #7b341e; }
 .sc-ball--wicket{ background: #fed7d7; color: #c53030; }
 .sc-ball--extra { background: #e9d8fd; color: #6b46c1; font-size: 0.65rem; }
+.sc-ball--penalty { background: #fc8181; color: #742a2a; font-size: 0.65rem; font-weight: 700; }
 .sc-ball--empty { background: transparent; border: 2px dashed #e2e8f0; }
 
 /* ── Entry panel ───────────────────────────────────────────────────────────── */
@@ -406,6 +415,17 @@ select.sc-setup__input {
 }
 
 .sc-btn--extra:hover:not(:disabled) { background: #e9d8fd; }
+
+.sc-btn--penalty-btn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  font-size: 0.9rem;
+  background: #fff5f5;
+  color: #c53030;
+  border: 2px solid #feb2b2;
+}
+.sc-btn--penalty-btn:hover:not(:disabled) { background: #fed7d7; }
 
 .sc-btn--primary {
   flex: 1;
@@ -745,6 +765,14 @@ select.sc-setup__input {
   font-weight: 700;
   color: #2d3748;
   min-width: 28px;
+  text-align: right;
+}
+
+.sc-history__cum {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #718096;
+  min-width: 40px;
   text-align: right;
 }
 

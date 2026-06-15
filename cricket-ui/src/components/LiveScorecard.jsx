@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import './LiveScorecard.css'
 
-const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket', 'Retired Hurt']
+const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket', 'Retired Hurt', 'Obstructing the Field', 'Hit the Ball Twice', 'Timed Out']
+const NON_BOWLER_WICKETS = new Set(['Run Out', 'Retired Hurt', 'Obstructing the Field', 'Hit the Ball Twice', 'Timed Out'])
 
 const ordinal = n => ['1st', '2nd', '3rd', '4th'][n - 1] || `${n}th`
 
@@ -20,6 +21,9 @@ function formatDismissal(b) {
   if (b.dismissal === 'Run Out') return `run out${b.fielder ? ` (${b.fielder})` : ''}`
   if (b.dismissal === 'Retired Hurt') return 'ret hurt'
   if (b.dismissal === 'Retired Out') return 'ret out'
+  if (b.dismissal === 'Obstructing the Field') return 'obstruct field'
+  if (b.dismissal === 'Hit the Ball Twice') return 'hit ball twice'
+  if (b.dismissal === 'Timed Out') return 'timed out'
   return b.dismissal
 }
 
@@ -34,6 +38,7 @@ function buildScorecardData(deliveries, inningsNum) {
         batters[d.retiredBatter].dismissal = d.retirementType === 'Out' ? 'Retired Out' : 'Retired Hurt'
       continue
     }
+    if (d.extraType === 'penalty') continue
     for (const name of [d.striker, d.nonStriker]) {
       if (name && !batters[name]) {
         batOrder.push(name)
@@ -60,7 +65,7 @@ function buildScorecardData(deliveries, inningsNum) {
       bwl.runs += charged
       if (d.extraType === 'wide') bwl.wides++
       if (d.extraType === 'noball') bwl.noBalls++
-      if (d.wicket && d.wicket.type !== 'Run Out' && d.wicket.type !== 'Retired Hurt') bwl.wickets++
+      if (d.wicket && !NON_BOWLER_WICKETS.has(d.wicket.type)) bwl.wickets++
       const ok = `${d.bowler}:${d.overNum}`
       if (!overMap[ok]) overMap[ok] = { bowler: d.bowler, balls: 0, runs: 0 }
       if (d.isLegalDelivery) overMap[ok].balls++
@@ -108,11 +113,9 @@ function getBowlerFigures(deliveries, innings, name) {
   const mine = deliveries.filter(d => !d.isRetirement && d.innings === innings && d.bowler === name)
   const legalBalls = mine.filter(d => d.isLegalDelivery).length
   const runs = mine.reduce(
-    (s, d) => (d.extraType === 'bye' || d.extraType === 'legbye' ? s : s + d.batRuns + d.extraRuns), 0
+    (s, d) => (d.extraType === 'bye' || d.extraType === 'legbye' || d.extraType === 'penalty' ? s : s + d.batRuns + d.extraRuns), 0
   )
-  const wickets = mine.filter(
-    d => d.wicket && d.wicket.type !== 'Run Out' && d.wicket.type !== 'Retired Hurt'
-  ).length
+  const wickets = mine.filter(d => d.wicket && !NON_BOWLER_WICKETS.has(d.wicket.type)).length
   const overs = Math.floor(legalBalls / 6)
   const rem = legalBalls % 6
   return {
@@ -176,6 +179,7 @@ function Ball({ d }) {
   if (d.extraType === 'noball') return <span className="sc-ball sc-ball--extra">nb</span>
   if (d.extraType === 'bye') return <span className="sc-ball sc-ball--extra">{d.extraRuns}b</span>
   if (d.extraType === 'legbye') return <span className="sc-ball sc-ball--extra">{d.extraRuns}lb</span>
+  if (d.extraType === 'penalty') return <span className="sc-ball sc-ball--penalty" title={`Penalty to ${d.penaltyTo || 'batting'} team`}>P5</span>
   if (d.batRuns === 0) return <span className="sc-ball sc-ball--dot">·</span>
   if (d.batRuns === 4) return <span className="sc-ball sc-ball--four">4</span>
   if (d.batRuns === 6) return <span className="sc-ball sc-ball--six">6</span>
@@ -511,6 +515,23 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     [oversPerBowler, maxOversPerBowler]
   )
 
+  const cumulativeByOver = useMemo(() => {
+    const byOver = {}
+    for (const d of deliveries) {
+      if (d.innings !== innings || d.isRetirement) continue
+      if (!byOver[d.overNum]) byOver[d.overNum] = []
+      byOver[d.overNum].push(d)
+    }
+    const map = {}
+    let cumR = 0, cumW = 0
+    for (const ovNum of Object.keys(byOver).map(Number).sort((a, b) => a - b)) {
+      cumR += byOver[ovNum].reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
+      cumW += byOver[ovNum].filter(d => d.wicket).length
+      map[ovNum] = { runs: cumR, wickets: cumW }
+    }
+    return map
+  }, [deliveries, innings])
+
   // Auto-dismiss milestone notification
   useEffect(() => {
     if (!milestone) return
@@ -720,6 +741,20 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     } else {
       setUiMode('normal')
     }
+  }
+
+  // ─── Penalty runs ─────────────────────────────────────────────────────────────
+
+  const handlePenalty = (to) => {
+    const penaltyDelivery = {
+      innings, overNum, bowler: currentBowler,
+      striker, nonStriker, battingTeam, bowlingTeam,
+      batRuns: 0, extraRuns: to === 'batting' ? 5 : 0, extraType: 'penalty',
+      totalRuns: to === 'batting' ? 5 : 0, isLegalDelivery: false, wicket: null,
+      penaltyTo: to, penaltyRuns: 5,
+    }
+    onChange({ deliveries: [...deliveries, penaltyDelivery], scorecardState })
+    setUiMode('normal')
   }
 
   // ─── Swap batters ─────────────────────────────────────────────────────────────
@@ -1151,6 +1186,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               <button className="sc-btn sc-btn--extra" onClick={() => setUiMode('noBallRuns')}>No Ball</button>
               <button className="sc-btn sc-btn--extra" onClick={() => { setPendingExtra('bye'); setUiMode('extraRuns') }}>Bye</button>
               <button className="sc-btn sc-btn--extra" onClick={() => { setPendingExtra('legbye'); setUiMode('extraRuns') }}>Leg Bye</button>
+              <button className="sc-btn sc-btn--penalty-btn" onClick={() => setUiMode('penalty')}>Penalty 5</button>
             </div>
 
             <div className="sc-entry__actions">
@@ -1203,6 +1239,17 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               ))}
             </div>
             <button className="sc-btn sc-btn--cancel" onClick={() => { setPendingExtra(null); setUiMode('normal') }}>Cancel</button>
+          </div>
+        )}
+
+        {uiMode === 'penalty' && (
+          <div className="sc-prompt">
+            <div className="sc-prompt__title">Penalty — 5 runs awarded to:</div>
+            <div className="sc-entry__row">
+              <button className="sc-btn sc-btn--primary" onClick={() => handlePenalty('batting')}>{battingTeam} (batting)</button>
+              <button className="sc-btn sc-btn--secondary" onClick={() => handlePenalty('fielding')}>{bowlingTeam} (fielding)</button>
+            </div>
+            <button className="sc-btn sc-btn--cancel" onClick={() => setUiMode('normal')}>Cancel</button>
           </div>
         )}
 
@@ -1313,6 +1360,17 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
         {uiMode === 'newBowler' && (
           <div className="sc-prompt">
             <div className="sc-prompt__title">Over {overNum + 1} — New Bowler</div>
+            {prevOverBowler && (() => {
+              const completedBalls = getOverBalls(deliveries, innings, overNum - 1)
+              const ovR = completedBalls.reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
+              const ovW = completedBalls.filter(d => d.wicket).length
+              const figs = getBowlerFigures(deliveries, innings, prevOverBowler)
+              return (
+                <div className="sc-prompt__note sc-prompt__note--over-summary">
+                  {prevOverBowler}: over {ovR}{ovW > 0 ? `-${ovW}W` : ''} | total {figs.overs}-{figs.runs}-{figs.wickets}
+                </div>
+              )
+            })()}
             {prevOverBowler && (
               <div className="sc-prompt__note">{prevOverBowler} cannot bowl consecutive overs</div>
             )}
@@ -1349,12 +1407,14 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             if (!balls.length) return null
             const ovRuns = balls.reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
             const ovWkts = balls.filter(d => d.wicket).length
+            const cum = cumulativeByOver[ov]
             return (
               <div key={ov} className="sc-history__row">
                 <span className="sc-history__ov">Ov {ov + 1}</span>
                 <span className="sc-history__bowler">{balls[0]?.bowler || ''}</span>
                 <span className="sc-history__balls">{balls.map((d, i) => <Ball key={i} d={d} />)}</span>
                 <span className="sc-history__summary">{ovRuns}{ovWkts > 0 ? `-${ovWkts}W` : ''}</span>
+                {cum && <span className="sc-history__cum">{cum.runs}/{cum.wickets}</span>}
               </div>
             )
           })}
