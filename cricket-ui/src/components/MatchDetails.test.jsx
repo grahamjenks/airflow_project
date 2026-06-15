@@ -129,3 +129,57 @@ describe('MatchDetails form submission', () => {
     expect(onSubmit.mock.calls[0][0]).toBeInstanceOf(Object)
   })
 })
+
+// ── Validation ────────────────────────────────────────────────────────────────
+
+describe('MatchDetails validation', () => {
+  const sameTeamData = {
+    matchType: 'T20', team1: 'India', team1Id: '', team2: 'India', team2Id: '',
+    venue: 'MCG', date: '2026-01-15', format: 'T20', overs: 20,
+    tossWinner: '', tossDecision: '', team1XI: [], team2XI: [], noBallPenalty: 1,
+  }
+
+  it('blocks submission when both teams are the same', () => {
+    const { onSubmit, container } = renderMatchDetails({ matchData: sameTeamData })
+    fireEvent.submit(container.querySelector('.match-form'))
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('shows an error message when both teams are the same', () => {
+    const { container } = renderMatchDetails({ matchData: sameTeamData })
+    fireEvent.submit(container.querySelector('.match-form'))
+    expect(screen.getByRole('alert')).toHaveTextContent(/must be different/i)
+  })
+
+  it('treats same team names case-insensitively', () => {
+    const { onSubmit, container } = renderMatchDetails({
+      matchData: { ...sameTeamData, team1: 'India', team2: 'india' },
+    })
+    fireEvent.submit(container.querySelector('.match-form'))
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('allows submission when teams are different', () => {
+    const { onSubmit, container } = renderMatchDetails({
+      matchData: { ...sameTeamData, team2: 'Australia' },
+    })
+    fireEvent.submit(container.querySelector('.match-form'))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears the error once teams are made different and resubmitted', async () => {
+    const user = userEvent.setup()
+    const { onSubmit, container } = renderMatchDetails({ matchData: sameTeamData })
+    fireEvent.submit(container.querySelector('.match-form'))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    // With no teams prop, team inputs are free-text — change Team 2 to differ
+    const team2 = screen.getByLabelText(/team 2/i)
+    await user.clear(team2)
+    await user.type(team2, 'Australia')
+    fireEvent.submit(container.querySelector('.match-form'))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})

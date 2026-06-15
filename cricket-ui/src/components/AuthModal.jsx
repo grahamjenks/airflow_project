@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn, signUp } from '../lib/supabase'
 import './AuthModal.css'
 
@@ -9,6 +9,12 @@ export default function AuthModal({ onSuccess, onClose }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const onKeyDown = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   const switchMode = (next) => {
     setMode(next)

@@ -32,6 +32,7 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
     team2XI: [],
   })
   const [squadData, setSquadData] = useState({})
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!formData.team1Id) return
@@ -150,6 +151,13 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const t1 = String(formData.team1 || '').trim()
+    const t2 = String(formData.team2 || '').trim()
+    if (t1 && t2 && t1.toLowerCase() === t2.toLowerCase()) {
+      setError('Team 1 and Team 2 must be different.')
+      return
+    }
+    setError(null)
     onSubmit(formData)
   }
 
@@ -200,6 +208,10 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
     <div className="match-details">
       <h2>Match Information</h2>
       <form onSubmit={handleSubmit} className="match-form">
+
+        {error && (
+          <div className="form-error" role="alert">{error}</div>
+        )}
 
         <div className="form-row">
           <div className="form-group">
