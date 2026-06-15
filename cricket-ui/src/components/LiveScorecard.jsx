@@ -541,7 +541,6 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
 
   // Refs so keyboard handler always sees current values without re-attaching
   const recordDeliveryRef = useRef()
-  recordDeliveryRef.current = recordDelivery
   const strikerRef = useRef(striker)
   strikerRef.current = striker
 
@@ -783,6 +782,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
       setUiMode('normal')
     }
   }
+  recordDeliveryRef.current = recordDelivery
 
   // ─── Penalty runs ─────────────────────────────────────────────────────────────
 
