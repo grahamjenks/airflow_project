@@ -15,21 +15,21 @@ const TODAY = new Date().toISOString().split('T')[0]
 const ROLE_ABBR = { 'Wicket-keeper': 'WK', 'Bowler': 'B', 'All-rounder': 'AR', 'Batter': 'BAT' }
 
 function MatchDetails({ onSubmit, matchData, teams = [], session }) {
-  const [formData, setFormData] = useState(matchData || {
-    noBallPenalty: 1,
-    matchType: '',
-    team1: '',
-    team1Id: '',
-    team2: '',
-    team2Id: '',
-    venue: '',
-    date: TODAY,
-    format: 'T20',
-    overs: 20,
-    tossWinner: '',
-    tossDecision: '',
-    team1XI: [],
-    team2XI: [],
+  const [formData, setFormData] = useState(() => {
+    if (!matchData) {
+      return {
+        noBallPenalty: 1, matchType: '', team1: '', team1Id: '',
+        team2: '', team2Id: '', venue: '', date: TODAY, format: 'T20',
+        overs: 20, tossWinner: '', tossDecision: '', team1XI: [], team2XI: [],
+        applyFreeHit: true,
+      }
+    }
+    return {
+      ...matchData,
+      applyFreeHit: matchData.applyFreeHit !== undefined
+        ? matchData.applyFreeHit
+        : matchData.matchType !== 'Test' && matchData.matchType !== 'First Class',
+    }
   })
   const [squadData, setSquadData] = useState({})
   const [error, setError] = useState(null)
@@ -91,6 +91,7 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
         ...prev,
         matchType: value,
         ...(mapped ? { format: mapped.format, overs: mapped.overs } : {}),
+        applyFreeHit: value !== 'Test' && value !== 'First Class',
       }))
       return
     }
@@ -330,23 +331,38 @@ function MatchDetails({ onSubmit, matchData, teams = [], session }) {
           </div>
         </div>
 
-        <div className="form-group form-group--noball">
-          <label>No-Ball Penalty</label>
-          <div className="noball-options">
-            {[1, 2].map(n => (
-              <label key={n} className={`noball-option${formData.noBallPenalty === n ? ' noball-option--active' : ''}`}>
-                <input
-                  type="radio"
-                  name="noBallPenalty"
-                  value={n}
-                  checked={formData.noBallPenalty === n}
-                  onChange={() => setFormData(prev => ({ ...prev, noBallPenalty: n }))}
-                />
-                {n} run{n > 1 ? 's' : ''}
-              </label>
-            ))}
+        <div className="form-row">
+          <div className="form-group form-group--noball">
+            <label>No-Ball Penalty</label>
+            <div className="noball-options">
+              {[1, 2].map(n => (
+                <label key={n} className={`noball-option${formData.noBallPenalty === n ? ' noball-option--active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="noBallPenalty"
+                    value={n}
+                    checked={formData.noBallPenalty === n}
+                    onChange={() => setFormData(prev => ({ ...prev, noBallPenalty: n }))}
+                  />
+                  {n} run{n > 1 ? 's' : ''}
+                </label>
+              ))}
+            </div>
+            <small className="form-hint">Most formats: 1 run · Some leagues: 2 runs</small>
           </div>
-          <small className="form-hint">Most formats: 1 run · Some leagues: 2 runs</small>
+
+          <div className="form-group form-group--freehit">
+            <label>Free Hit Rule</label>
+            <label className={`noball-option${formData.applyFreeHit ? ' noball-option--active' : ''}`}>
+              <input
+                type="checkbox"
+                checked={Boolean(formData.applyFreeHit)}
+                onChange={e => setFormData(prev => ({ ...prev, applyFreeHit: e.target.checked }))}
+              />
+              Apply free hit after no-balls
+            </label>
+            <small className="form-hint">T20 &amp; ODI: enabled · Test/First Class: disabled</small>
+          </div>
         </div>
 
         <button type="submit" className="submit-button">

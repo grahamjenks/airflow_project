@@ -564,7 +564,8 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     const preBowlerWickets = getBowlerFigures(deliveries, innings, currentBowler).wickets
 
     // Compute free-hit state for the NEXT delivery
-    const nextIsFreeHit = isTestFormat ? false
+    const applyFreeHitRule = matchData?.applyFreeHit ?? !isTestFormat
+    const nextIsFreeHit = !applyFreeHitRule ? false
       : extraType === 'noball' ? true
       : (isFreeHit && extraType === 'wide') ? true
       : false
@@ -1221,9 +1222,9 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
                 {(isFreeHit ? ['Run Out'] : DISMISSAL_TYPES).map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            {['Caught', 'Stumped', 'Run Out'].includes(wicketForm.type) && (
+            {['Caught', 'Stumped', 'Run Out'].includes(isFreeHit ? 'Run Out' : wicketForm.type) && (
               <div className="form-group">
-                <label>{wicketForm.type === 'Stumped' ? 'Wicket-keeper' : 'Fielder'}</label>
+                <label>{(isFreeHit ? 'Run Out' : wicketForm.type) === 'Stumped' ? 'Wicket-keeper' : 'Fielder'}</label>
                 <PlayerPicker
                   names={fielderNames}
                   groups={fielderGroups}
@@ -1241,7 +1242,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               </select>
             </div>
             <div className="sc-prompt__actions">
-              <button className="sc-btn sc-btn--primary" onClick={() => { recordDelivery({ wicket: wicketForm }); setUiMode('newBatsman') }}>Confirm Wicket</button>
+              <button className="sc-btn sc-btn--primary" onClick={() => { recordDelivery({ wicket: isFreeHit ? { ...wicketForm, type: 'Run Out' } : wicketForm }); setUiMode('newBatsman') }}>Confirm Wicket</button>
               <button className="sc-btn sc-btn--cancel" onClick={() => setUiMode('normal')}>Cancel</button>
             </div>
           </div>
