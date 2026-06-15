@@ -533,6 +533,27 @@ select.sc-setup__input {
   border-color: #d69e2e !important;
 }
 
+/* ── Setup hint (explains why Start Innings is disabled) ───────────────────── */
+.sc-setup__hint {
+  font-size: 0.82rem;
+  color: #718096;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* ── Keyboard shortcut hint ─────────────────────────────────────────────────── */
+.sc-entry__hint {
+  font-size: 0.7rem;
+  color: #c0c8d4;
+  text-align: center;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
 /* ── Bowler restriction note ───────────────────────────────────────────────── */
 .sc-prompt__note {
   font-size: 0.8rem;
@@ -944,10 +965,18 @@ select.sc-setup__input {
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .sc-board { padding: 1.25rem; }
+  /* Sticky scoreboard so the score is always visible while tapping buttons */
+  .sc-board {
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
   .sc-board__score { font-size: 2.8rem; }
 
-  .sc-btn--ball { width: 52px; height: 52px; font-size: 1.15rem; }
+  /* Larger touch targets for scoring buttons */
+  .sc-btn--ball { width: 58px; height: 64px; font-size: 1.3rem; }
+  .sc-btn--extra, .sc-btn--penalty-btn { height: 58px; }
 
   .sc-batsman { padding: 0.75rem 1rem; }
   .sc-batsman__score { font-size: 1.3rem; }

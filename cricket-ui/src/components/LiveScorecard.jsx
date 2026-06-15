@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import './LiveScorecard.css'
 
 const DISMISSAL_TYPES = ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket', 'Retired Hurt', 'Obstructing the Field', 'Hit the Ball Twice', 'Timed Out']
@@ -539,6 +539,47 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
     return () => clearTimeout(id)
   }, [milestone])
 
+  // Refs so keyboard handler always sees current values without re-attaching
+  const recordDeliveryRef = useRef()
+  recordDeliveryRef.current = recordDelivery
+  const strikerRef = useRef(striker)
+  strikerRef.current = striker
+
+  // Auto-focus first interactive element when a prompt opens
+  useEffect(() => {
+    if (uiMode === 'normal') return
+    const t = setTimeout(() => {
+      const el = document.querySelector('.sc-prompt select, .sc-prompt input')
+      el?.focus()
+    }, 30)
+    return () => clearTimeout(t)
+  }, [uiMode])
+
+  // Keyboard shortcuts: 0–4, 6 = runs; W = wicket; Esc = cancel any prompt
+  useEffect(() => {
+    if (phase !== 'scoring') return
+    const onKey = (e) => {
+      if (e.target.matches('input, select, textarea, button')) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (uiMode === 'normal') {
+        if (['0', '1', '2', '3', '4', '6'].includes(e.key)) {
+          e.preventDefault()
+          recordDeliveryRef.current({ batRuns: Number(e.key) })
+        } else if (e.key === 'w' || e.key === 'W') {
+          e.preventDefault()
+          setWicketForm({ ...DEFAULT_WICKET_FORM, outBatsman: strikerRef.current })
+          setUiMode('wicket')
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setPendingExtra(null)
+        setUiMode('normal')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [phase, uiMode])
+
   // Retired hurt batters available to return (current innings only)
   const canReturnBatters = retiredBatters.filter(rb => rb.innings === innings && rb.type === 'Hurt')
 
@@ -987,6 +1028,14 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
             <label>Opening Bowler</label>
             <PlayerPicker names={setupBowlerNames} groups={setupBowlerGroups} value={setupForm.bowler} onChange={v => setSetupForm(f => ({ ...f, bowler: v }))} placeholder="Select bowler…" className="sc-setup__input" />
           </div>
+          {(() => {
+            const hint = !setupForm.striker.trim() ? 'Select the opener on strike'
+              : !setupForm.nonStriker.trim() ? 'Select the opener off strike'
+              : setupForm.striker.trim() === setupForm.nonStriker.trim() ? 'Both openers must be different players'
+              : !setupForm.bowler.trim() ? 'Select the opening bowler'
+              : null
+            return hint ? <p className="sc-setup__hint">{hint}</p> : null
+          })()}
           <button type="submit" className="sc-btn sc-btn--primary" disabled={!setupForm.striker.trim() || !setupForm.nonStriker.trim() || !setupForm.bowler.trim() || setupForm.striker.trim() === setupForm.nonStriker.trim()}>
             Start Innings
           </button>
@@ -1195,6 +1244,7 @@ export default function LiveScorecard({ matchData, deliveries, scorecardState, o
               <button className="sc-btn sc-btn--retire" onClick={() => { setRetireForm(DEFAULT_RETIRE_FORM); setUiMode('retireBatsman') }}>Retire</button>
               <button className="sc-btn sc-btn--end" onClick={handleEndInnings}>{endBtnLabel}</button>
             </div>
+            <div className="sc-entry__hint" aria-hidden="true">Keys: 0–4, 6 = runs · W = wicket · Esc = cancel</div>
           </>
         )}
 
