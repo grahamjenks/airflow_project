@@ -258,40 +258,48 @@ function App() {
         )}
 
         <nav className="nav-tabs">
-          <button
-            className={currentView === 'match' ? 'active' : ''}
-            onClick={() => setCurrentView('match')}
-          >Match Details</button>
-          <button
-            className={currentView === 'scorecard' ? 'active' : ''}
-            onClick={() => setCurrentView('scorecard')}
-            disabled={!matchData}
-          >Scorecard</button>
-          <button
-            className={currentView === 'view' ? 'active' : ''}
-            onClick={() => setCurrentView('view')}
-            disabled={!matchData}
-          >View Statistics</button>
-          <button
-            className={currentView === 'teams' ? 'active' : ''}
-            onClick={() => setCurrentView('teams')}
-          >Teams</button>
-          <button
-            className={currentView === 'search' ? 'active' : ''}
-            onClick={() => setCurrentView('search')}
-          >Search Matches</button>
-          <button
-            className={currentView === 'live' ? 'active' : ''}
-            onClick={() => setCurrentView('live')}
-          >Live Scores</button>
-          <button
-            className={currentView === 'playerstats' ? 'active' : ''}
-            onClick={() => setCurrentView('playerstats')}
-          >Player Stats</button>
+          <button className={currentView === 'match' ? 'active' : ''} onClick={() => setCurrentView('match')}>Match</button>
+          <button className={currentView === 'scorecard' ? 'active' : ''} onClick={() => setCurrentView('scorecard')} disabled={!matchData}>Scorecard</button>
+          <button className={currentView === 'view' ? 'active' : ''} onClick={() => setCurrentView('view')} disabled={!matchData}>Statistics</button>
+          <button className={currentView === 'teams' ? 'active' : ''} onClick={() => setCurrentView('teams')}>Teams</button>
+          <button className={currentView === 'search' ? 'active' : ''} onClick={() => setCurrentView('search')}>Search</button>
+          <button className={currentView === 'live' ? 'active' : ''} onClick={() => setCurrentView('live')}>Live</button>
+          <button className={currentView === 'playerstats' ? 'active' : ''} onClick={() => setCurrentView('playerstats')}>Players</button>
         </nav>
       </header>
 
       <main className="app-main">
+        {/* Onboarding hint for first-time users */}
+        {currentView === 'match' && !matchData && (
+          <div className="app-onboarding">
+            <span className="app-onboarding__icon">🏏</span>
+            <span className="app-onboarding__text">
+              {isSupabaseConfigured() && !session
+                ? 'Sign in to load saved teams, or type team names below to score right now — no account needed.'
+                : 'Fill in the match details below to start scoring. Visit Teams to create squads for player auto-complete.'}
+            </span>
+          </div>
+        )}
+
+        {/* Progress strip when in scorecard view */}
+        {matchData && currentView === 'scorecard' && (
+          <div className="app-progress">
+            <span className={`app-progress__step${scorecardState.phase !== 'setup' ? ' app-progress__step--done' : ' app-progress__step--active'}`}>
+              {scorecardState.phase !== 'setup' ? '✓ ' : ''}Innings Setup
+            </span>
+            <span className="app-progress__sep">›</span>
+            <span className={`app-progress__step${
+              scorecardState.phase === 'scoring' || scorecardState.phase === 'inningsBreak' ? ' app-progress__step--active' :
+              scorecardState.phase === 'ended' ? ' app-progress__step--done' : ''}`}>
+              {scorecardState.phase === 'ended' ? '✓ ' : ''}Scoring
+            </span>
+            <span className="app-progress__sep">›</span>
+            <span className={`app-progress__step${scorecardState.phase === 'ended' ? ' app-progress__step--active' : ''}`}>
+              Complete
+            </span>
+          </div>
+        )}
+
         {currentView === 'match' && (
           <MatchDetails onSubmit={handleMatchSubmit} matchData={matchData} teams={teams} session={session} />
         )}
