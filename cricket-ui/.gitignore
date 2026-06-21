@@ -17,3 +17,6 @@ npm-debug.log*
 .vscode/
 .idea/
 
+
+# vite-plugin-pwa dev output
+dev-dist
