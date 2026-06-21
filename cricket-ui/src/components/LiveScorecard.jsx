@@ -288,6 +288,7 @@ function FullScorecard({ deliveries, currentInnings, currentStriker, currentBowl
                 </div>
 
                 {batters.length > 0 && (
+                  <div className="table-scroll">
                   <table className="sc-fullcard__table">
                     <thead>
                       <tr>
@@ -312,9 +313,11 @@ function FullScorecard({ deliveries, currentInnings, currentStriker, currentBowl
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
 
                 {bowlers.length > 0 && (
+                  <div className="table-scroll">
                   <table className="sc-fullcard__table sc-fullcard__table--bowl">
                     <thead>
                       <tr>
@@ -335,6 +338,7 @@ function FullScorecard({ deliveries, currentInnings, currentStriker, currentBowl
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
             )

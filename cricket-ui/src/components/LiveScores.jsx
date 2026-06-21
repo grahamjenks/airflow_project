@@ -172,6 +172,7 @@ function ScorecardInnings({ deliveries, innings, sc }) {
       </div>
 
       {batters.length > 0 && (
+        <div className="table-scroll">
         <table className="lsc-sc-table">
           <thead>
             <tr>
@@ -196,9 +197,11 @@ function ScorecardInnings({ deliveries, innings, sc }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {bowlers.length > 0 && (
+        <div className="table-scroll">
         <table className="lsc-sc-table lsc-sc-table--bowling">
           <thead>
             <tr>
@@ -221,6 +224,7 @@ function ScorecardInnings({ deliveries, innings, sc }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )
