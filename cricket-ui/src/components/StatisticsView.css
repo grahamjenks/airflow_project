@@ -1,5 +1,5 @@
 .statistics-view {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -17,7 +17,7 @@
 }
 
 .view-header h2 {
-  color: #2d3748;
+  color: var(--text);
   font-size: 1.75rem;
 }
 
@@ -34,9 +34,9 @@
 .team-stats-label {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #4a5568;
-  background: #f7fafc;
-  border-left: 3px solid #667eea;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border-left: 3px solid var(--brand);
   padding: 0.4rem 0.75rem;
   margin-bottom: 0.5rem;
   border-radius: 0 6px 6px 0;
@@ -45,7 +45,7 @@
 .reset-button,
 .export-button {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  background: var(--danger-solid);
   color: white;
   border: none;
   border-radius: 8px;
@@ -57,15 +57,15 @@
 
 .reset-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(229, 62, 62, 0.4);
+  box-shadow: 0 8px 20px var(--danger-border);
 }
 
 .export-button {
-  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+  background: linear-gradient(135deg, var(--success) 0%, var(--success) 100%);
 }
 
 .export-button:hover {
-  box-shadow: 0 8px 20px rgba(56, 161, 105, 0.4);
+  box-shadow: 0 8px 20px var(--success-border);
 }
 
 /* Match info */
@@ -78,7 +78,7 @@
 }
 
 .match-info-card h3 {
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 1rem;
   font-size: 1.25rem;
 }
@@ -90,12 +90,12 @@
 }
 
 .match-info-grid > div {
-  color: #4a5568;
+  color: var(--text-secondary);
   padding: 0.5rem 0;
 }
 
 .match-info-grid strong {
-  color: #667eea;
+  color: var(--brand);
   margin-right: 0.5rem;
 }
 
@@ -108,11 +108,11 @@
 }
 
 .kpi-card {
-  background: #f7fafc;
+  background: var(--surface-2);
   border-radius: 12px;
   padding: 1.25rem 1rem;
   text-align: center;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid var(--brand);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -134,13 +134,13 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #718096;
+  color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
 
 .kpi-sub {
   font-size: 0.78rem;
-  color: #a0aec0;
+  color: var(--text-faint);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -148,15 +148,15 @@
 
 /* Charts */
 .chart-container {
-  background: #f7fafc;
+  background: var(--surface-2);
   border-radius: 12px;
   padding: 1.25rem 1rem 1rem;
   margin-bottom: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .chart-title {
-  color: #2d3748;
+  color: var(--text);
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 1rem;
@@ -176,18 +176,18 @@
 
 /* Tooltip */
 .chart-tooltip {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   font-size: 0.9rem;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .chart-tooltip .tooltip-name {
   font-weight: 700;
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 0.35rem;
 }
 
@@ -199,39 +199,39 @@
 }
 
 .stats-section {
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--border);
   padding-top: 2rem;
 }
 
 .stats-section h3 {
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
 }
 
 .no-data {
-  color: #718096;
+  color: var(--text-muted);
   font-style: italic;
   text-align: center;
   padding: 2rem;
-  background: #f7fafc;
+  background: var(--surface-2);
   border-radius: 8px;
 }
 
 .stats-table-container {
   overflow-x: auto;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .stats-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
 }
 
 .stats-table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   color: white;
 }
 
@@ -244,12 +244,12 @@
 }
 
 .stats-table tbody tr {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s ease;
 }
 
 .stats-table tbody tr:hover {
-  background: #f7fafc;
+  background: var(--surface-2);
 }
 
 .stats-table tbody tr:last-child {
@@ -258,7 +258,7 @@
 
 .stats-table td {
   padding: 0.85rem 1rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -269,27 +269,27 @@
   border-radius: 10px;
   font-size: 0.78rem;
   font-weight: 600;
-  background: #edf2f7;
-  color: #4a5568;
+  background: var(--surface-3);
+  color: var(--text-secondary);
 }
 
-.dismissal-badge.dismissal-bowled   { background: #fed7d7; color: #c53030; }
-.dismissal-badge.dismissal-caught   { background: #e9d8fd; color: #6b46c1; }
-.dismissal-badge.dismissal-lbw      { background: #feebc8; color: #c05621; }
-.dismissal-badge.dismissal-run-out  { background: #c6f6d5; color: #276749; }
-.dismissal-badge.dismissal-stumped  { background: #fefcbf; color: #744210; }
-.dismissal-badge.dismissal-not-out  { background: #bee3f8; color: #2c5282; }
+.dismissal-badge.dismissal-bowled   { background: var(--danger-bg); color: var(--danger); }
+.dismissal-badge.dismissal-caught   { background: var(--brand-tint-strong); color: var(--brand-2); }
+.dismissal-badge.dismissal-lbw      { background: var(--warning-bg); color: var(--warning); }
+.dismissal-badge.dismissal-run-out  { background: var(--success-bg); color: var(--success-strong); }
+.dismissal-badge.dismissal-stumped  { background: var(--warning-bg); color: var(--warning); }
+.dismissal-badge.dismissal-not-out  { background: var(--info-bg); color: var(--info-strong); }
 
 /* Export */
 .export-section {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--border);
   text-align: center;
 }
 
 .export-section h3 {
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 1rem;
   font-size: 1.25rem;
 }
@@ -302,11 +302,11 @@
 }
 
 .save-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
 }
 
 .save-button:hover {
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 20px var(--brand-ring);
 }
 
 /* Responsive */
@@ -344,7 +344,7 @@
 
 /* ── Print button ────────────────────────────────────────────────────────────── */
 .print-button {
-  background: #4a5568;
+  background: var(--neutral-solid);
   color: white;
   border: none;
   border-radius: 8px;
@@ -354,7 +354,7 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.print-button:hover { background: #2d3748; }
+.print-button:hover { background: var(--text); }
 
 /* ── Print-only scorecard ───────────────────────────────────────────────────── */
 .print-only { display: none; }
@@ -370,12 +370,12 @@
     padding: 1.5cm;
     font-family: 'Courier New', Courier, monospace;
     font-size: 10pt;
-    color: #000;
+    color: var(--text);
   }
   .print-only h2 { font-size: 14pt; margin-bottom: 0.2cm; }
-  .print-only h3 { font-size: 12pt; margin: 0.5cm 0 0.2cm; border-bottom: 1px solid #000; }
+  .print-only h3 { font-size: 12pt; margin: 0.5cm 0 0.2cm; border-bottom: 1px solid var(--text); }
   .print-only h4 { font-size: 10pt; margin: 0.3cm 0 0.1cm; }
-  .print-scorecard-meta { font-size: 9pt; color: #444; margin-bottom: 0.5cm; }
+  .print-scorecard-meta { font-size: 9pt; color: var(--text-secondary); margin-bottom: 0.5cm; }
   .print-scorecard-table {
     width: 100%;
     border-collapse: collapse;
@@ -384,12 +384,12 @@
   }
   .print-scorecard-table th,
   .print-scorecard-table td {
-    border: 1px solid #999;
+    border: 1px solid var(--text-faint);
     padding: 2pt 4pt;
     text-align: left;
     font-size: 9pt;
   }
-  .print-scorecard-table th { background: #e8e8e8; font-weight: bold; }
+  .print-scorecard-table th { background: var(--border); font-weight: bold; }
   .print-scorecard-table td:not(:first-child) { text-align: center; }
   .print-fow { font-size: 9pt; margin: 0.2cm 0; }
   .print-fow span { margin-right: 0.4cm; }

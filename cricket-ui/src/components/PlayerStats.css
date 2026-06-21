@@ -14,14 +14,14 @@
 }
 
 .ps-page-header h2 {
-  color: #2d3748;
+  color: var(--text);
   margin: 0;
   font-size: 1.5rem;
 }
 
 .ps-match-count {
   font-size: 0.85rem;
-  color: #a0aec0;
+  color: var(--text-faint);
 }
 
 .ps-controls {
@@ -33,11 +33,11 @@
 
 .ps-tabs {
   display: flex;
-  background: #f7fafc;
+  background: var(--surface-2);
   border-radius: 10px;
   padding: 3px;
   gap: 3px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .ps-tabs button {
@@ -48,30 +48,30 @@
   font-weight: 600;
   cursor: pointer;
   background: transparent;
-  color: #718096;
+  color: var(--text-muted);
   transition: all 0.15s;
 }
 
 .ps-tabs button.active {
-  background: white;
-  color: #667eea;
+  background: var(--surface);
+  color: var(--brand);
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
 .ps-team-filter {
   padding: 0.45rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.9rem;
-  color: #4a5568;
-  background: white;
+  color: var(--text-secondary);
+  background: var(--surface);
   cursor: pointer;
   outline: none;
 }
 
 .ps-table-wrap {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: auto;
 }
@@ -83,34 +83,34 @@
 }
 
 .ps-table th {
-  background: #f7fafc;
+  background: var(--surface-2);
   padding: 0.6rem 0.75rem;
   text-align: left;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #718096;
-  border-bottom: 2px solid #e2e8f0;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border);
   white-space: nowrap;
 }
 
 .ps-table td {
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid #f7fafc;
-  color: #2d3748;
+  border-bottom: 1px solid var(--surface-2);
+  color: var(--text);
   white-space: nowrap;
 }
 
 .ps-table tbody tr:last-child td { border-bottom: none; }
 
-.ps-table tbody tr:hover td { background: #f7fafc; }
+.ps-table tbody tr:hover td { background: var(--surface-2); }
 
-.ps-row--top td { background: #faf5ff; }
-.ps-row--top:hover td { background: #f3e8ff !important; }
+.ps-row--top td { background: var(--brand-tint); }
+.ps-row--top:hover td { background: var(--brand-tint) !important; }
 
 .ps-rank {
-  color: #a0aec0;
+  color: var(--text-faint);
   font-size: 0.78rem;
   font-weight: 700;
   min-width: 24px;
@@ -119,23 +119,23 @@
 .ps-name { font-weight: 600; }
 
 .ps-team {
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.82rem;
 }
 
 .ps-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #718096;
-  background: white;
+  color: var(--text-muted);
+  background: var(--surface);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .ps-state--error {
-  color: #c53030;
-  background: #fff5f5;
-  border-color: #feb2b2;
+  color: var(--danger);
+  background: var(--danger-bg-soft);
+  border-color: var(--danger-border);
 }
 
 @media (max-width: 600px) {

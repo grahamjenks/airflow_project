@@ -1,5 +1,5 @@
 .match-details {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -8,7 +8,7 @@
 }
 
 .match-details h2 {
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 2rem;
   font-size: 1.75rem;
   text-align: center;
@@ -33,7 +33,7 @@
 }
 
 .form-group label {
-  color: #4a5568;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -41,7 +41,7 @@
 .form-group input,
 .form-group select {
   padding: 0.75rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -51,19 +51,19 @@
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 
 .form-group small {
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin-top: 0.25rem;
 }
 
 .submit-button {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -76,7 +76,7 @@
 
 .submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 20px var(--brand-ring);
 }
 
 .submit-button:active {
@@ -96,14 +96,14 @@
 
 .form-hint {
   font-size: 0.75rem;
-  color: #a0aec0;
+  color: var(--text-faint);
   margin-top: 0.2rem;
 }
 
 .form-error {
-  background: #fed7d7;
-  color: #c53030;
-  border: 1px solid #fc8181;
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
@@ -113,8 +113,8 @@
 /* ── No-ball penalty selector ── */
 .form-group--noball {
   padding: 1.1rem 1.25rem;
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 10px;
   gap: 0.6rem;
 }
@@ -129,19 +129,19 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.55rem 1.1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 8px;
-  background: white;
+  background: var(--surface);
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #4a5568;
+  color: var(--text-secondary);
   transition: border-color 0.15s, background 0.15s;
   user-select: none;
 }
 
 .noball-option input[type="radio"] {
-  accent-color: #667eea;
+  accent-color: var(--brand);
   width: 16px;
   height: 16px;
   margin: 0;
@@ -157,16 +157,16 @@
 }
 
 .noball-option--active {
-  border-color: #667eea;
-  background: #f0f3ff;
-  color: #2d3748;
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  color: var(--text);
 }
 
 /* ── Playing XI selector ── */
 .form-group--xi {
   padding: 0.9rem 1rem 0.8rem;
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 10px;
   gap: 0.5rem;
 }
@@ -185,12 +185,12 @@
 .xi-optional {
   font-size: 0.75rem;
   font-weight: 400;
-  color: #a0aec0;
+  color: var(--text-faint);
 }
 
 .xi-count {
   font-size: 0.75rem;
-  color: #667eea;
+  color: var(--brand);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -207,19 +207,19 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.3rem 0.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: white;
+  background: var(--surface);
   cursor: pointer;
   font-size: 0.8rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   transition: border-color 0.12s, background 0.12s;
   user-select: none;
   min-width: 0;
 }
 
 .xi-player input[type="checkbox"] {
-  accent-color: #667eea;
+  accent-color: var(--brand);
   width: 13px;
   height: 13px;
   flex-shrink: 0;
@@ -235,9 +235,9 @@
 }
 
 .xi-player--on {
-  border-color: #667eea;
-  background: #f0f3ff;
-  color: #2d3748;
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -251,7 +251,7 @@
 .xi-player__role {
   flex-shrink: 0;
   font-size: 0.65rem;
-  color: #a0aec0;
+  color: var(--text-faint);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -264,25 +264,25 @@
 
 .xi-btn {
   padding: 0.25rem 0.65rem;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #4a5568;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: border-color 0.12s;
 }
 
-.xi-btn:hover { border-color: #667eea; color: #2b6cb0; }
+.xi-btn:hover { border-color: var(--brand); color: var(--info-strong); }
 
-.xi-btn--clear { color: #c53030; border-color: #fed7d7; }
-.xi-btn--clear:hover { border-color: #c53030; }
+.xi-btn--clear { color: var(--danger); border-color: var(--danger-bg); }
+.xi-btn--clear:hover { border-color: var(--danger); }
 
 .no-teams-prompt {
   text-align: center;
   padding: 3rem 2rem;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .no-teams-prompt__icon {
@@ -292,12 +292,12 @@
 
 .no-teams-prompt h3 {
   font-size: 1.3rem;
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 0.75rem;
 }
 
 .no-teams-prompt p {
-  color: #718096;
+  color: var(--text-muted);
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
 }
