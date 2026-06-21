@@ -70,6 +70,17 @@
   --info-bg: #dbeafe;
   --info-border: #93c5fd;
 
+  /* Solid fills — saturated in BOTH themes, for colored surfaces that carry
+     white text (badges, status banners). Unlike the tokens above, these do
+     not lighten in dark mode, so white text stays legible. */
+  --danger-solid: #dc2626;
+  --success-solid: #16a34a;
+  --warning-solid: #d97706;
+  --info-solid: #2563eb;
+  --neutral-solid: #475262;
+  /* Scoreboard surface — stays dark in both themes (always white text) */
+  --scoreboard: linear-gradient(135deg, #1e3a8a 0%, #1f2937 100%);
+
   /* Radius scale */
   --radius-sm: 8px;
   --radius: 12px;
@@ -96,15 +107,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand: #8a8aff;
-    --brand-hover: #9d9dff;
-    --brand-strong: #b3b3ff;
-    --brand-2: #b18cff;
-    --brand-contrast: #14182a;
-    --brand-gradient: linear-gradient(135deg, #6d6df5 0%, #9d6bff 100%);
-    --brand-tint: rgba(138, 138, 255, 0.14);
-    --brand-tint-strong: rgba(138, 138, 255, 0.22);
-    --brand-ring: rgba(138, 138, 255, 0.45);
+    /* Kept saturated (not pastel) so brand fills with white text stay legible,
+       while still reading as an accent on dark surfaces. */
+    --brand: #6366f1;
+    --brand-hover: #7c80f7;
+    --brand-strong: #a5a8ff;
+    --brand-2: #9d6bff;
+    --brand-contrast: #ffffff;
+    --brand-gradient: linear-gradient(135deg, #6366f1 0%, #9d6bff 100%);
+    --brand-tint: rgba(124, 128, 247, 0.16);
+    --brand-tint-strong: rgba(124, 128, 247, 0.26);
+    --brand-ring: rgba(124, 128, 247, 0.5);
 
     --accent: #4ade80;
     --accent-strong: #86efac;
@@ -142,6 +155,14 @@
     --info-strong: #93c5fd;
     --info-bg: rgba(37, 99, 235, 0.18);
     --info-border: rgba(96, 165, 250, 0.4);
+
+    /* Solid fills stay saturated enough for white text in dark mode too */
+    --danger-solid: #dc2626;
+    --success-solid: #15803d;
+    --warning-solid: #b45309;
+    --info-solid: #1d4ed8;
+    --neutral-solid: #475262;
+    --scoreboard: linear-gradient(135deg, #1e293b 0%, #0b1120 100%);
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);

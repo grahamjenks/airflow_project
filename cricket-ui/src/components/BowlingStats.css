@@ -1,5 +1,5 @@
 .bowling-stats {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -8,7 +8,7 @@
 }
 
 .bowling-stats h2 {
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 2rem;
   font-size: 1.75rem;
   text-align: center;
@@ -17,11 +17,11 @@
 .stats-summary {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--border);
 }
 
 .stats-summary h3 {
-  color: #4a5568;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
   font-size: 1.25rem;
 }
@@ -42,7 +42,7 @@
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 12px var(--brand-tint);
 }
 
 .stat-header {
@@ -53,12 +53,12 @@
 }
 
 .stat-header strong {
-  color: #2d3748;
+  color: var(--text);
   font-size: 1.1rem;
 }
 
 .team-badge {
-  background: #667eea;
+  background: var(--brand);
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
@@ -70,7 +70,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -93,7 +93,7 @@
 }
 
 .form-group label {
-  color: #4a5568;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -101,7 +101,7 @@
 .form-group input,
 .form-group select {
   padding: 0.75rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -111,12 +111,12 @@
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 
 .form-group small {
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin-top: 0.25rem;
 }
@@ -132,18 +132,18 @@
 }
 
 .stat-display {
-  color: #2d3748;
+  color: var(--text);
   font-size: 1.1rem;
 }
 
 .stat-display strong {
-  color: #667eea;
+  color: var(--brand);
   margin-right: 0.5rem;
 }
 
 .submit-button {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -156,7 +156,7 @@
 
 .submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 20px var(--brand-ring);
 }
 
 .submit-button:active {

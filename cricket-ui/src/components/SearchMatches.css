@@ -1,5 +1,5 @@
 .search-matches {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -8,7 +8,7 @@
 }
 
 .search-matches h2 {
-  color: #2d3748;
+  color: var(--text);
   margin-bottom: 2rem;
   font-size: 1.75rem;
   text-align: center;
@@ -19,15 +19,15 @@
 .loading-matches {
   text-align: center;
   padding: 3rem;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 1.1rem;
-  background: #f7fafc;
+  background: var(--surface-2);
   border-radius: 12px;
-  border: 2px dashed #e2e8f0;
+  border: 2px dashed var(--border);
 }
 
 .loading-matches {
-  color: #667eea;
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -42,7 +42,7 @@
 .search-input {
   width: 100%;
   padding: 1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -51,8 +51,8 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 
 .filter-row {
@@ -69,30 +69,30 @@
 }
 
 .filter-group label {
-  color: #4a5568;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.95rem;
 }
 
 .filter-group select {
   padding: 0.75rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
   font-family: inherit;
-  background: white;
+  background: var(--surface);
   cursor: pointer;
 }
 
 .filter-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 
 .results-count {
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.95rem;
   text-align: right;
   padding: 0.5rem 0;
@@ -105,8 +105,8 @@
 }
 
 .match-card {
-  background: white;
-  border: 2px solid #e2e8f0;
+  background: var(--surface);
+  border: 2px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   transition: all 0.3s ease;
@@ -115,8 +115,8 @@
 
 .match-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.15);
-  border-color: #667eea;
+  box-shadow: 0 8px 20px var(--brand-tint);
+  border-color: var(--brand);
 }
 
 .match-card-header {
@@ -128,7 +128,7 @@
 }
 
 .match-title h3 {
-  color: #2d3748;
+  color: var(--text);
   font-size: 1.25rem;
   margin-bottom: 0.5rem;
 }
@@ -147,13 +147,13 @@
 }
 
 .badge-type {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   color: white;
 }
 
 .badge-format {
-  background: #edf2f7;
-  color: #4a5568;
+  background: var(--surface-3);
+  color: var(--text-secondary);
 }
 
 .match-actions {
@@ -172,25 +172,25 @@
 }
 
 .load-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   color: white;
 }
 
 .load-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px var(--brand-ring);
 }
 
 .delete-button {
-  background: #fed7d7;
-  color: #c53030;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .delete-button:hover {
-  background: #fc8181;
+  background: var(--danger-solid);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+  box-shadow: 0 4px 12px var(--danger-border);
 }
 
 .match-card-body {
@@ -203,7 +203,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -213,7 +213,7 @@
 }
 
 .match-info-row strong {
-  color: #2d3748;
+  color: var(--text);
   min-width: 70px;
 }
 
@@ -234,12 +234,12 @@
 }
 
 .stat-label {
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
 .stat-value {
-  color: #2d3748;
+  color: var(--text);
   font-size: 1.1rem;
   font-weight: 600;
 }

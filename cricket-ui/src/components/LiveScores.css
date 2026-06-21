@@ -16,7 +16,7 @@
 }
 
 .lsc-page-header h2 {
-  color: #2d3748;
+  color: var(--text);
   margin: 0;
   font-size: 1.5rem;
 }
@@ -29,37 +29,37 @@
 
 .lsc-updated {
   font-size: 0.8rem;
-  color: #a0aec0;
+  color: var(--text-faint);
 }
 
 .lsc-refresh {
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.3rem 0.6rem;
   font-size: 1rem;
   cursor: pointer;
-  color: #667eea;
+  color: var(--brand);
   transition: background 0.15s;
 }
 
-.lsc-refresh:hover { background: #f0f3ff; }
+.lsc-refresh:hover { background: var(--brand-tint); }
 
 /* ── State messages ── */
 .lsc-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 1rem;
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .lsc-state--error {
-  color: #c53030;
-  background: #fff5f5;
-  border-color: #feb2b2;
+  color: var(--danger);
+  background: var(--danger-bg-soft);
+  border-color: var(--danger-border);
   text-align: left;
   padding: 1.25rem 1.5rem;
 }
@@ -67,7 +67,7 @@
 .lsc-state--error code {
   display: inline-block;
   margin-top: 0.4rem;
-  background: #fed7d7;
+  background: var(--danger-bg);
   padding: 0.3rem 0.6rem;
   border-radius: 4px;
   font-size: 0.8rem;
@@ -83,16 +83,16 @@
 
 /* ── Match card ── */
 .lsc-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .lsc-card--live {
-  border-color: #667eea;
-  box-shadow: 0 2px 16px rgba(102,126,234,0.15);
+  border-color: var(--brand);
+  box-shadow: 0 2px 16px var(--brand-tint);
 }
 
 .lsc-card__header {
@@ -114,12 +114,12 @@
 .lsc-card__team {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #2d3748;
+  color: var(--text);
 }
 
 .lsc-card__vs {
   font-size: 0.8rem;
-  color: #a0aec0;
+  color: var(--text-faint);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -143,8 +143,8 @@
 }
 
 .lsc-badge--live {
-  background: #fed7d7;
-  color: #c53030;
+  background: var(--danger-bg);
+  color: var(--danger);
   animation: lsc-pulse 1.8s ease-in-out infinite;
 }
 
@@ -154,13 +154,13 @@
 }
 
 .lsc-badge--break {
-  background: #fefcbf;
-  color: #744210;
+  background: var(--warning-bg);
+  color: var(--warning);
 }
 
 .lsc-badge--type {
-  background: #ebf4ff;
-  color: #2b6cb0;
+  background: var(--info-bg);
+  color: var(--info-strong);
 }
 
 .lsc-card__sub {
@@ -169,7 +169,7 @@
   flex-wrap: wrap;
   padding: 0 1.25rem 0.75rem;
   font-size: 0.8rem;
-  color: #a0aec0;
+  color: var(--text-faint);
 }
 
 .lsc-card__ago { margin-left: auto; }
@@ -180,8 +180,8 @@
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.5rem 1.25rem;
-  border-top: 1px solid #f7fafc;
-  border-bottom: 1px solid #f7fafc;
+  border-top: 1px solid var(--surface-2);
+  border-bottom: 1px solid var(--surface-2);
 }
 
 .lsc-score {
@@ -192,7 +192,7 @@
 }
 
 .lsc-score--batting {
-  background: #f0f3ff;
+  background: var(--brand-tint);
   margin: 0 -1.25rem;
   padding: 0.45rem 1.25rem;
   border-radius: 0;
@@ -201,48 +201,48 @@
 .lsc-score__team {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #4a5568;
+  color: var(--text-secondary);
   min-width: 120px;
 }
 
 .lsc-score__runs {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #1a202c;
+  color: var(--text);
   line-height: 1;
 }
 
 .lsc-score__wkts {
   font-size: 1rem;
   font-weight: 400;
-  color: #718096;
+  color: var(--text-muted);
 }
 
 .lsc-score__overs {
   font-size: 0.8rem;
-  color: #a0aec0;
+  color: var(--text-faint);
 }
 
 .lsc-score__inning-label {
   margin-left: auto;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--brand);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 /* ── Target ── */
 .lsc-target {
-  background: #ebf4ff;
-  color: #2b6cb0;
+  background: var(--info-bg);
+  color: var(--info-strong);
   padding: 0.5rem 1.25rem;
   font-size: 0.88rem;
 }
 
 .lsc-target--won {
-  background: #f0fff4;
-  color: #276749;
+  background: var(--success-bg);
+  color: var(--success-strong);
 }
 
 /* ── Live stats bar ── */
@@ -252,8 +252,8 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 1.25rem;
-  background: #f7fafc;
-  border-top: 1px solid #edf2f7;
+  background: var(--surface-2);
+  border-top: 1px solid var(--surface-3);
 }
 
 .lsc-live-stats__batters {
@@ -271,16 +271,16 @@
 .lsc-live-stat__name {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #2d3748;
+  color: var(--text);
 }
 
 .lsc-live-stat--ns .lsc-live-stat__name {
   font-weight: 400;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .lsc-live-stat__strike {
-  color: #667eea;
+  color: var(--brand);
   font-weight: 700;
   margin-left: 1px;
 }
@@ -288,13 +288,13 @@
 .lsc-live-stat__fig {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text);
 }
 
 .lsc-live-stat__balls {
   font-size: 0.75rem;
   font-weight: 400;
-  color: #718096;
+  color: var(--text-muted);
 }
 
 .lsc-live-stats__bowler {
@@ -306,19 +306,19 @@
 
 .lsc-live-stats__bowler .lsc-live-stat__name {
   font-weight: 400;
-  color: #718096;
+  color: var(--text-muted);
 }
 
 .lsc-live-stat__fig--bowl {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 /* ── Worm ── */
 .lsc-worm {
   padding: 0.75rem 1.25rem 1rem;
-  border-top: 1px solid #f7fafc;
+  border-top: 1px solid var(--surface-2);
 }
 
 .lsc-worm__title {
@@ -326,17 +326,17 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #a0aec0;
+  color: var(--text-faint);
   margin-bottom: 0.5rem;
 }
 
 .lsc-worm-empty {
   padding: 1rem 1.25rem;
   font-size: 0.85rem;
-  color: #a0aec0;
+  color: var(--text-faint);
   text-align: center;
   font-style: italic;
-  border-top: 1px solid #f7fafc;
+  border-top: 1px solid var(--surface-2);
 }
 
 /* ── Scorecard toggle ── */
@@ -344,28 +344,28 @@
   display: block;
   width: 100%;
   padding: 0.6rem 1.25rem;
-  background: #f7fafc;
+  background: var(--surface-2);
   border: none;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
   font-size: 0.8rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--brand);
   cursor: pointer;
   text-align: center;
   letter-spacing: 0.02em;
   transition: background 0.15s;
 }
 
-.lsc-scorecard-toggle:hover { background: #edf2f7; }
+.lsc-scorecard-toggle:hover { background: var(--surface-3); }
 
 /* ── Inline scorecard ── */
 .lsc-scorecard {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 }
 
 .lsc-sc-innings {
   padding: 0.75rem 1.25rem 1rem;
-  border-bottom: 1px solid #f7fafc;
+  border-bottom: 1px solid var(--surface-2);
 }
 
 .lsc-sc-innings:last-child { border-bottom: none; }
@@ -380,7 +380,7 @@
 .lsc-sc-team {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #2d3748;
+  color: var(--text);
 }
 
 .lsc-sc-label {
@@ -388,7 +388,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #a0aec0;
+  color: var(--text-faint);
 }
 
 .lsc-sc-table {
@@ -401,12 +401,12 @@
 .lsc-sc-table thead th {
   padding: 0.3rem 0.4rem;
   text-align: right;
-  color: #a0aec0;
+  color: var(--text-faint);
   font-weight: 600;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .lsc-sc-th--name { text-align: left; }
@@ -414,8 +414,8 @@
 .lsc-sc-table tbody td {
   padding: 0.35rem 0.4rem;
   text-align: right;
-  border-bottom: 1px solid #f7fafc;
-  color: #4a5568;
+  border-bottom: 1px solid var(--surface-2);
+  color: var(--text-secondary);
 }
 
 .lsc-sc-table tbody tr:last-child td { border-bottom: none; }
@@ -423,7 +423,7 @@
 .lsc-sc-td--name {
   text-align: left;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text);
   white-space: nowrap;
   max-width: 110px;
   overflow: hidden;
@@ -432,7 +432,7 @@
 
 .lsc-sc-td--how {
   text-align: left;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.75rem;
   max-width: 130px;
   overflow: hidden;
@@ -440,11 +440,11 @@
   white-space: nowrap;
 }
 
-.lsc-sc-tr--live td { background: #f0f3ff; }
+.lsc-sc-tr--live td { background: var(--brand-tint); }
 
-.lsc-sc-star { color: #667eea; }
+.lsc-sc-star { color: var(--brand); }
 
-.lsc-sc-muted { color: #a0aec0; }
+.lsc-sc-muted { color: var(--text-faint); }
 
 .lsc-sc-table--bowling { margin-top: 0.5rem; }
 
