@@ -35,30 +35,38 @@ class TestLogin:
 
 class TestRegister:
     def test_success_returns_201_with_token(self, client):
-        res = client.post("/auth/register", json={"username": "newuser", "password": "newpass"})
+        res = client.post("/auth/register", json={"username": "newuser", "password": "newpassword"})
         assert res.status_code == 201
         data = res.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
 
     def test_duplicate_username_returns_409(self, client, test_user):
-        res = client.post("/auth/register", json={"username": "testuser", "password": "other"})
+        res = client.post("/auth/register", json={"username": "testuser", "password": "otherpassword"})
         assert res.status_code == 409
         assert "already taken" in res.json()["detail"]
 
     def test_missing_username_returns_422(self, client):
-        res = client.post("/auth/register", json={"password": "pass"})
+        res = client.post("/auth/register", json={"password": "password1"})
+        assert res.status_code == 422
+
+    def test_short_password_returns_422(self, client):
+        res = client.post("/auth/register", json={"username": "shorty", "password": "short"})
+        assert res.status_code == 422
+
+    def test_short_username_returns_422(self, client):
+        res = client.post("/auth/register", json={"username": "ab", "password": "password1"})
         assert res.status_code == 422
 
     def test_returned_token_grants_access_to_protected_routes(self, client):
-        res = client.post("/auth/register", json={"username": "fresh", "password": "pass"})
+        res = client.post("/auth/register", json={"username": "fresh", "password": "password1"})
         assert res.status_code == 201
         token = res.json()["access_token"]
         r2 = client.get("/matches", headers={"Authorization": f"Bearer {token}"})
         assert r2.status_code == 200
 
     def test_two_distinct_users_can_register(self, client):
-        r1 = client.post("/auth/register", json={"username": "user1", "password": "pass"})
-        r2 = client.post("/auth/register", json={"username": "user2", "password": "pass"})
+        r1 = client.post("/auth/register", json={"username": "user1", "password": "password1"})
+        r2 = client.post("/auth/register", json={"username": "user2", "password": "password1"})
         assert r1.status_code == 201
         assert r2.status_code == 201

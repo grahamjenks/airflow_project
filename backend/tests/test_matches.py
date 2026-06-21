@@ -140,3 +140,42 @@ class TestDeleteMatch:
     def test_requires_authentication(self, client):
         res = client.delete(f"/matches/{uuid.uuid4()}")
         assert res.status_code == 403
+
+
+class TestOwnershipIsolation:
+    def test_list_only_returns_own_matches(self, client, auth_headers, other_auth_headers):
+        client.post("/matches", json=PAYLOAD, headers=auth_headers)
+        res = client.get("/matches", headers=other_auth_headers)
+        assert res.status_code == 200
+        assert res.json() == []
+
+    def test_cannot_get_another_users_match(self, client, auth_headers, other_auth_headers):
+        created = client.post("/matches", json=PAYLOAD, headers=auth_headers).json()
+        res = client.get(f"/matches/{created['id']}", headers=other_auth_headers)
+        assert res.status_code == 404
+
+    def test_cannot_update_another_users_match(self, client, auth_headers, other_auth_headers):
+        created = client.post("/matches", json=PAYLOAD, headers=auth_headers).json()
+        res = client.put(f"/matches/{created['id']}", json=UPDATED_PAYLOAD, headers=other_auth_headers)
+        assert res.status_code == 404
+
+    def test_cannot_delete_another_users_match(self, client, auth_headers, other_auth_headers):
+        created = client.post("/matches", json=PAYLOAD, headers=auth_headers).json()
+        res = client.delete(f"/matches/{created['id']}", headers=other_auth_headers)
+        # Delete is idempotent (204) but must not actually remove the owner's match.
+        assert res.status_code == 204
+        still_there = client.get(f"/matches/{created['id']}", headers=auth_headers)
+        assert still_there.status_code == 200
+
+
+class TestGetMatchFields:
+    def test_get_returns_deliveries_and_scorecard_state(self, client, auth_headers):
+        payload = {
+            **PAYLOAD,
+            "deliveries": [{"over": 1, "ball": 1, "runs": 4}],
+            "scorecardState": {"currentOver": 1},
+        }
+        created = client.post("/matches", json=payload, headers=auth_headers).json()
+        res = client.get(f"/matches/{created['id']}", headers=auth_headers).json()
+        assert res["deliveries"] == [{"over": 1, "ball": 1, "runs": 4}]
+        assert res["scorecardState"] == {"currentOver": 1}

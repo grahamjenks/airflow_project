@@ -45,6 +45,9 @@ build/
 *.swo
 *~
 
+# Kubernetes secrets (use k8s/secrets.example.yaml as a template)
+k8s/secrets.yaml
+
 # OS files
 .DS_Store
 .DS_Store?

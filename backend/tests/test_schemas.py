@@ -36,8 +36,16 @@ class TestLoginRequest:
 
 class TestRegisterRequest:
     def test_valid_inputs_parse_correctly(self):
-        m = RegisterRequest(username="bob", password="pass")
+        m = RegisterRequest(username="bob", password="password1")
         assert m.username == "bob"
+
+    def test_short_password_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            RegisterRequest(username="bob", password="short")
+
+    def test_short_username_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            RegisterRequest(username="ab", password="password1")
 
 
 class TestTokenResponse:

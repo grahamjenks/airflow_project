@@ -15,6 +15,12 @@ _fd, _db_file = tempfile.mkstemp(suffix=".db", prefix="test_cricket_")
 os.close(_fd)
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_file}"
 
+# Required settings (no defaults in production) plus a permissive rate limit so
+# the throttle never interferes with the test suite.
+os.environ.setdefault("JWT_SECRET", "test-secret-not-for-production")
+os.environ.setdefault("ADMIN_PASSWORD", "test-admin-password")
+os.environ.setdefault("LOGIN_RATE_LIMIT", "10000/minute")
+
 # ── 2. Patch postgresql-specific types to SQLite-compatible equivalents ───────
 #    Must happen BEFORE any `from app.models import ...` so the `from
 #    sqlalchemy.dialects.postgresql import JSONB, UUID` in models.py picks up
@@ -114,4 +120,21 @@ def test_user(db):
 def auth_headers(test_user):
     """Bearer token headers for the test user."""
     token = create_access_token(sub=test_user.username)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
+def other_user(db):
+    """A second persisted user, distinct from ``test_user``."""
+    user = User(username="otheruser", password_hash=hash_password("otherpass"))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@pytest.fixture()
+def other_auth_headers(other_user):
+    """Bearer token headers for the second user."""
+    token = create_access_token(sub=other_user.username)
     return {"Authorization": f"Bearer {token}"}
