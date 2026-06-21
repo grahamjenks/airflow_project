@@ -1,0 +1,46 @@
+.theme-toggle {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+
+.theme-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+
+.theme-toggle__btn:hover:not(.theme-toggle__btn--active) {
+  color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.theme-toggle__btn--active {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: var(--shadow-sm);
+}
+
+/* On small screens, show only the icons to save space */
+@media (max-width: 600px) {
+  .theme-toggle__label {
+    display: none;
+  }
+  .theme-toggle__btn {
+    padding: 0.35rem 0.45rem;
+  }
+}

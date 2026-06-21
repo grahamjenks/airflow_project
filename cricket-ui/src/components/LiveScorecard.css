@@ -669,7 +669,7 @@ select.sc-setup__input {
 .sc-break__note { color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem; }
 
 .sc-break__result {
-  background: linear-gradient(135deg, var(--success-solid) 0%, var(--success-strong) 100%);
+  background: var(--success-solid);
   color: white;
   border-radius: 10px;
   padding: 0.85rem 1.25rem;

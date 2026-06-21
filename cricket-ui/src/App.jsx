@@ -11,6 +11,8 @@ import { loadTeams, loadPlayers } from './services/teamService'
 import { supabase, isSupabaseConfigured, signOut } from './lib/supabase'
 import { logger } from './lib/logger'
 import AuthModal from './components/AuthModal'
+import ThemeToggle from './components/ThemeToggle'
+import { useToast } from './components/Toast'
 import './App.css'
 
 // ─── Derive batting stats from ball-by-ball deliveries ───────────────────────
@@ -126,6 +128,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [teams, setTeams] = useState([])
   const [squad, setSquad] = useState({})
+  const toast = useToast()
 
   useEffect(() => {
     if (!supabase) return
@@ -181,10 +184,11 @@ function App() {
       setJustSaved(true)
     } catch (error) {
       logger.error('match.save_failed', { error, currentMatchId })
+      toast.error("Couldn't save the match. Your latest changes are kept locally — check your connection.")
     } finally {
       setIsSaving(false)
     }
-  }, [matchData, battingStats, bowlingStats, deliveries, scorecardState, currentMatchId])
+  }, [matchData, battingStats, bowlingStats, deliveries, scorecardState, currentMatchId, toast])
 
   // Clear the "Saved" confirmation a few seconds after it appears
   useEffect(() => {
@@ -246,16 +250,15 @@ function App() {
           {!isSaving && justSaved && <span className="saved-indicator">Saved ✓</span>}
         </div>
 
-        {isSupabaseConfigured() && !session && (
-          <div className="auth-header-actions">
+        <div className="header-controls">
+          <ThemeToggle />
+          {isSupabaseConfigured() && !session && (
             <button className="sign-in-btn" onClick={() => setShowAuthModal(true)}>Sign In</button>
-          </div>
-        )}
-        {isSupabaseConfigured() && session && (
-          <div className="auth-header-actions">
+          )}
+          {isSupabaseConfigured() && session && (
             <button className="sign-out-btn" onClick={handleLogout}>Sign Out</button>
-          </div>
-        )}
+          )}
+        </div>
 
         <nav className="nav-tabs">
           <button className={currentView === 'match' ? 'active' : ''} onClick={() => setCurrentView('match')}>Match</button>
