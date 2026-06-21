@@ -1,6 +1,7 @@
 /* ============================================================================
    Design tokens — "Modern cricket" theme
-   Light theme by default; dark theme via prefers-color-scheme.
+   Light theme by default; dark theme via [data-theme="dark"] on <html>
+   (set from saved preference or the OS setting — see lib/theme.js).
    Component styles reference these tokens (var(--...)) rather than raw hex,
    so the whole app re-themes from this one place.
    ========================================================================== */
@@ -105,8 +106,11 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+/* Dark theme — applied via [data-theme="dark"] on <html>. An inline script in
+   index.html sets data-theme from the saved preference (or the OS setting when
+   set to "system") before first paint, so there is no flash and a manual toggle
+   can override the OS setting. */
+:root[data-theme='dark'] {
     /* Kept saturated (not pastel) so brand fills with white text stay legible,
        while still reading as an accent on dark surfaces. */
     --brand: #6366f1;
@@ -171,7 +175,6 @@
     --shadow-brand: 0 8px 22px rgba(109, 109, 245, 0.45);
 
     color-scheme: dark;
-  }
 }
 
 * {
