@@ -25,52 +25,20 @@ Once your project is ready:
 
 1. Click on **"SQL Editor"** in the left sidebar
 2. Click **"New query"**
-3. Copy and paste this SQL:
+3. Open [`supabase/schema.sql`](../supabase/schema.sql) from this repo, copy its **entire** contents, and paste them in.
+4. Click **"Run"** (or press Cmd/Ctrl + Enter). You should see "Success. No rows returned".
 
-```sql
--- Create matches table
-CREATE TABLE IF NOT EXISTS matches (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  match_data JSONB NOT NULL,
-  batting_stats JSONB DEFAULT '[]'::jsonb,
-  bowling_stats JSONB DEFAULT '[]'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+This creates the `teams`, `players`, and `matches` tables and — critically — enables
+**owner-scoped Row Level Security** so each signed-in user can only see and modify
+their own data. The script is idempotent, so you can re-run it safely.
 
--- Create index on match_data for better search performance
-CREATE INDEX IF NOT EXISTS idx_matches_match_data ON matches USING GIN (match_data);
-
--- Create index on created_at for sorting
-CREATE INDEX IF NOT EXISTS idx_matches_created_at ON matches (created_at DESC);
-
--- Enable Row Level Security (RLS)
-ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
-
--- Create policy to allow all operations (for now - you can restrict later)
-CREATE POLICY "Allow all operations" ON matches
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger to automatically update updated_at
-CREATE TRIGGER update_matches_updated_at
-  BEFORE UPDATE ON matches
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-```
-
-4. Click **"Run"** (or press Cmd/Ctrl + Enter)
-5. You should see "Success. No rows returned"
+> ⚠️ **Do not use a `USING (true) WITH CHECK (true)` "allow all" policy.** Because the
+> app authenticates with the public anon key (which is shipped in the browser bundle),
+> an open policy lets *anyone* read, edit, and delete *every* user's data. Earlier
+> versions of this guide created exactly that policy — `supabase/schema.sql` drops it
+> and replaces it with per-user policies. After running, confirm under
+> **Authentication → Policies** that only the `*_select_own` / `*_insert_own` /
+> `*_update_own` / `*_delete_own` policies exist.
 
 ## Step 4: Get Your API Keys
 
@@ -141,11 +109,11 @@ You can verify data is being saved:
 
 ## Next Steps (Optional)
 
-### Add Authentication
-To enable user-specific matches:
-1. Enable authentication in Supabase
-2. Update RLS policies to filter by user
-3. Add auth to React app
+### Authentication (already wired)
+The app already uses Supabase Auth (email/password) and the per-user RLS policies
+from `supabase/schema.sql`. Just ensure **Email** auth is enabled under
+**Authentication → Providers** in your Supabase project. Saving teams/matches
+requires being signed in.
 
 ### Back up Data
 - Supabase automatically backs up your database
@@ -154,11 +122,17 @@ To enable user-specific matches:
 
 ## Security Notes
 
-⚠️ **Important**: The current setup allows anyone with your API keys to read/write data. For production:
+The web app talks to Supabase directly with the **public anon key**, so Row Level
+Security is your only access control. [`supabase/schema.sql`](../supabase/schema.sql)
+sets this up correctly:
 
-1. **Enable Row Level Security** (already done, but with open policy)
-2. **Create user-specific policies** when you add authentication
-3. **Don't commit `.env` file** to version control (it's already in `.gitignore`)
+1. **RLS is enabled** on `teams`, `players`, and `matches`.
+2. **Per-user policies** restrict every row to its owner (`auth.uid() = user_id`), so
+   users only ever see and modify their own data. Users must be **signed in** — the
+   anon role has no access.
+3. **Never** re-introduce an `USING (true)` "allow all" policy.
+4. **Don't commit `.env`** (already in `.gitignore`). The anon key is safe to expose;
+   the service-role key is **not** — keep it server-side only.
 
 ## Support
 
