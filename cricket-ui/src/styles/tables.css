@@ -1,0 +1,74 @@
+/* ============================================================================
+   Responsive data tables
+   Wide stat tables overflow on phones. Rather than crush columns, we let each
+   table scroll horizontally inside its container and pin the first column
+   (player/team name) so it stays visible while the numeric columns scroll.
+   ========================================================================== */
+
+/* Generic horizontal-scroll wrapper for tables that aren't already wrapped. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Momentum scrolling for the wrappers that already exist in components. */
+.stats-table-container,
+.ps-table-wrap,
+.tv-squad-table-wrap {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  /* ── Pin the first column ────────────────────────────────────────────────
+     A subtle right-edge line makes the pinned column read as floating above
+     the scrolling content. */
+  .stats-table :is(th, td):first-child,
+  .ps-table :is(th, td):first-child,
+  .tv-squad-table :is(th, td):first-child,
+  .lsc-sc-table :is(th, td):first-child,
+  .sc-fullcard__table :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    box-shadow: 1px 0 0 var(--border);
+  }
+
+  /* Opaque body backgrounds so scrolled cells don't bleed under the pin. */
+  .stats-table td:first-child,
+  .ps-table td:first-child,
+  .tv-squad-table td:first-child,
+  .lsc-sc-table td:first-child,
+  .sc-fullcard__table td:first-child {
+    background: var(--surface);
+  }
+
+  /* Pinned header cells stack above body cells and keep their header colour. */
+  .stats-table thead th:first-child,
+  .tv-squad-table thead th:first-child {
+    background: var(--brand);
+    z-index: 2;
+  }
+  .ps-table thead th:first-child {
+    background: var(--surface-2);
+    z-index: 2;
+  }
+  .lsc-sc-table thead th:first-child,
+  .sc-fullcard__table thead th:first-child {
+    background: var(--surface);
+    z-index: 2;
+  }
+
+  /* Highlighted rows keep their tint on the pinned cell too. */
+  .lsc-sc-tr--live td:first-child,
+  .sc-fullcard__row--live td:first-child,
+  .ps-row--top td:first-child {
+    background: var(--brand-tint);
+  }
+
+  /* Denser cells on small screens. */
+  .stats-table th,
+  .stats-table td {
+    padding: 0.6rem 0.7rem;
+    font-size: 0.82rem;
+  }
+}
