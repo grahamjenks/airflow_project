@@ -6,10 +6,13 @@ import uuid
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.logging import configure_logging, log_event
 from app.db import SessionLocal
 from app.models import User
@@ -27,6 +30,9 @@ def parse_cors_origins(raw: str) -> list[str]:
 
 
 app = FastAPI(title="Cricket API", version=settings.app_version or "0.1.0")
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
