@@ -23,6 +23,18 @@
   --accent: #16a34a;
   --accent-strong: #15803d;
 
+  /* Chart / data-viz palette — categorical series colored by team.
+     Validated colorblind-safe (indigo↔green, deutan ΔE ~29) against the
+     light surface; the dark block below re-steps them for the dark surface.
+     grid/axis reference the theme neutrals so they follow light/dark on their own. */
+  --series-1: #5b5bf0;   /* team batting first  */
+  --series-2: #16a34a;   /* team batting second */
+  --series-3: #8b5cf6;   /* 3rd innings (Tests) */
+  --series-4: #b45309;   /* 4th innings (Tests) */
+  --chart-grid: var(--border);
+  --chart-axis: var(--text-muted);
+  --chart-wicket: #dc2626;
+
   /* Neutral slate scale */
   --gray-50: #f8fafc;
   --gray-100: #f1f5f9;
@@ -126,6 +138,14 @@
     --accent: #4ade80;
     --accent-strong: #86efac;
 
+    /* Chart series re-stepped for the dark surface (validated: L in the
+       dark band 0.48–0.67, ≥3:1 on #161d2e, deutan ΔE ~29). */
+    --series-1: #6366f1;
+    --series-2: #16a34a;
+    --series-3: #9d6bff;
+    --series-4: #d97706;
+    --chart-wicket: #f87171;
+
     --bg: #0e1320;
     --bg-gradient: linear-gradient(160deg, #0d1220 0%, #111726 55%, #0e1a16 100%);
     --surface: #161d2e;
@@ -206,6 +226,14 @@ body {
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Data-UI polish: numbers line up in columns, headings wrap gracefully */
+table {
+  font-variant-numeric: tabular-nums;
+}
+h1, h2, h3, h4 {
+  text-wrap: balance;
 }
 
 /* Consistent, accessible focus ring across interactive elements */

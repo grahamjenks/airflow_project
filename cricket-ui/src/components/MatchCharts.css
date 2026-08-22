@@ -1,0 +1,62 @@
+/* Innings-progression charts (worm + Manhattan). Colors come from the
+   --series-* / --chart-* tokens in index.css so both themes are covered. */
+
+.mc-section .chart-container {
+  margin-bottom: 1.25rem;
+}
+
+.mc-manhattan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.mc-manhattan-grid .chart-container {
+  margin-bottom: 0;
+}
+
+/* Caption / legend helpers */
+.mc-caption {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.mc-muted {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.mc-wicket-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--chart-wicket);
+  box-shadow: 0 0 0 2px var(--surface);
+  flex-shrink: 0;
+}
+
+.mc-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Recharts paints legend text inline; keep it on theme ink */
+.mc-section .recharts-legend-item-text {
+  color: var(--text-secondary) !important;
+}
+
+@media (max-width: 560px) {
+  .mc-manhattan-grid {
+    grid-template-columns: 1fr;
+  }
+}
