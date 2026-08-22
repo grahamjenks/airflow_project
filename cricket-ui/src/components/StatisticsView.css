@@ -70,9 +70,9 @@
 
 /* Match info */
 .match-info-card {
-  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-  border: 2px solid #667eea30;
-  border-radius: 12px;
+  background: var(--brand-tint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -109,17 +109,18 @@
 
 .kpi-card {
   background: var(--surface-2);
-  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1.25rem 1rem;
   text-align: center;
-  border-top: 4px solid var(--brand);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-top: 3px solid var(--brand);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
 }
 
 .kpi-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+  box-shadow: var(--shadow);
 }
 
 .kpi-value {
@@ -127,6 +128,7 @@
   font-weight: 800;
   line-height: 1;
   margin-bottom: 0.4rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .kpi-label {
@@ -236,20 +238,26 @@
 }
 
 .stats-table th {
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 1rem;
   text-align: left;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
 .stats-table tbody tr {
   border-bottom: 1px solid var(--border);
-  transition: background 0.2s ease;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.stats-table tbody tr:nth-child(even) {
+  background: var(--surface-2);
 }
 
 .stats-table tbody tr:hover {
-  background: var(--surface-2);
+  background: var(--brand-tint);
 }
 
 .stats-table tbody tr:last-child {
@@ -342,7 +350,7 @@
   }
 }
 
-/* ── Print button ────────────────────────────────────────────────────────────── */
+/* ── Print button ── */
 .print-button {
   background: var(--neutral-solid);
   color: white;
@@ -356,7 +364,7 @@
 }
 .print-button:hover { background: var(--text); }
 
-/* ── Print-only scorecard ───────────────────────────────────────────────────── */
+/* ── Print-only scorecard ── */
 .print-only { display: none; }
 
 @media print {

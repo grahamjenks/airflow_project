@@ -228,6 +228,14 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* Data-UI polish: numbers line up in columns, headings wrap gracefully */
+table {
+  font-variant-numeric: tabular-nums;
+}
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
 /* Consistent, accessible focus ring across interactive elements */
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: none;
