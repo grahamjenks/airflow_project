@@ -6,7 +6,10 @@ import '@testing-library/jest-dom'
 // jsdom, and we're testing component logic rather than chart rendering.
 vi.mock('recharts', () => ({
   BarChart: ({ children }) => <div data-testid="bar-chart">{children}</div>,
+  ComposedChart: ({ children }) => <div data-testid="composed-chart">{children}</div>,
   Bar: () => null,
+  Line: () => null,
+  Scatter: () => null,
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -54,7 +57,7 @@ function renderView(props = {}) {
   return { ...result, onReset, onSave, onViewScorecard }
 }
 
-// ── Rendering ─────────────────────────────────────────────────────────────────
+// ── Rendering ────────────────────────────────────────────────────────────
 
 describe('StatisticsView rendering', () => {
   it('renders the statistics view container', () => {
@@ -90,7 +93,7 @@ describe('StatisticsView rendering', () => {
   })
 })
 
-// ── Batting stats table ───────────────────────────────────────────────────────
+// ── Batting stats table ─────────────────────────────────────────────
 
 describe('StatisticsView batting stats', () => {
   it('shows all batter names', () => {
@@ -106,7 +109,7 @@ describe('StatisticsView batting stats', () => {
   })
 })
 
-// ── Bowling stats table ───────────────────────────────────────────────────────
+// ── Bowling stats table ─────────────────────────────────────────────
 
 describe('StatisticsView bowling stats', () => {
   it('shows bowler names', () => {
@@ -115,7 +118,7 @@ describe('StatisticsView bowling stats', () => {
   })
 })
 
-// ── Empty / null state ────────────────────────────────────────────────────────
+// ── Empty / null state ──────────────────────────────────────────────
 
 describe('StatisticsView empty state', () => {
   it('renders without matchData', () => {
@@ -131,7 +134,7 @@ describe('StatisticsView empty state', () => {
   })
 })
 
-// ── Callbacks ─────────────────────────────────────────────────────────────────
+// ── Callbacks ──────────────────────────────────────────────────────
 
 describe('StatisticsView callbacks', () => {
   it('calls onReset when the reset/new-match button is clicked', () => {

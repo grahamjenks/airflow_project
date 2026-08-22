@@ -2,31 +2,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
+import MatchCharts from './MatchCharts'
 import './StatisticsView.css'
 
-// ─── Delivery-derived helpers ─────────────────────────────────────────────────
+// ─── Delivery-derived helpers ────────────────────────────────────────
 
 function inningsBatting(deliveries, n) {
   return (deliveries || []).find(d => d.innings === n)?.battingTeam || `Innings ${n}`
-}
-
-function buildRunsPerOver(deliveries) {
-  if (!deliveries?.length) return null
-  const nums = [...new Set(deliveries.map(d => d.innings))].sort()
-  const maxOv = Math.max(...nums.flatMap(n =>
-    deliveries.filter(d => d.innings === n && !d.isRetirement).map(d => d.overNum)
-  ), -1)
-  if (maxOv < 0) return null
-  const rows = Array.from({ length: maxOv + 1 }, (_, ov) => {
-    const row = { over: ov + 1 }
-    for (const n of nums) {
-      row[`i${n}`] = deliveries
-        .filter(d => d.innings === n && !d.isRetirement && d.overNum === ov)
-        .reduce((s, d) => s + d.batRuns + d.extraRuns, 0)
-    }
-    return row
-  })
-  return { rows, inningsNums: nums }
 }
 
 function buildFallOfWickets(deliveries) {
@@ -62,20 +44,25 @@ function buildExtras(deliveries) {
 }
 
 const ORDINAL = ['1st', '2nd', '3rd', '4th']
-const INS_COLORS = ['#667eea', '#e53e3e', '#38a169', '#d69e2e']
 
-const COLORS = ['#667eea', '#764ba2', '#38a169', '#e53e3e', '#dd6b20', '#3182ce', '#d69e2e', '#805ad5']
+// Chart colors reference the --series-*/theme tokens (index.css) so every chart
+// re-themes for light/dark instead of being pinned to light-mode hex.
+const CHART_GRID = 'var(--chart-grid)'
+const CHART_AXIS = { fill: 'var(--chart-axis)', fontSize: 13 }
+const SERIES_BAT = 'var(--series-1)'
+const SERIES_BOWL = 'var(--series-2)'
 
 const DISMISSAL_COLORS = {
-  'Caught': '#667eea',
-  'Bowled': '#e53e3e',
-  'LBW': '#dd6b20',
-  'Run Out': '#38a169',
-  'Stumped': '#d69e2e',
-  'Hit Wicket': '#805ad5',
-  'Retired Hurt': '#718096',
-  'Not Out': '#3182ce',
+  'Caught': 'var(--series-1)',
+  'Bowled': 'var(--chart-wicket)',
+  'LBW': 'var(--series-4)',
+  'Run Out': 'var(--series-2)',
+  'Stumped': 'var(--warning-solid)',
+  'Hit Wicket': 'var(--series-3)',
+  'Retired Hurt': 'var(--neutral-solid)',
+  'Not Out': 'var(--info-solid)',
 }
+const PIE_FALLBACK = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--brand-2)', 'var(--info)']
 
 function KpiCard({ label, value, sub, color }) {
   return (
@@ -88,7 +75,6 @@ function KpiCard({ label, value, sub, color }) {
 }
 
 function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = [], onReset, onSave, onViewScorecard }) {
-  const runsPerOver   = buildRunsPerOver(deliveries)
   const fallOfWickets = buildFallOfWickets(deliveries)
   const extrasData    = buildExtras(deliveries)
   const calculateBattingTotals = () => {
@@ -232,30 +218,30 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
         <div className="kpi-row">
           {battingTotals && (
             <>
-              <KpiCard label="Total Runs" value={battingTotals.runs} sub={`${battingTotals.balls} balls`} color="#667eea" />
-              <KpiCard label="Team Strike Rate" value={battingTotals.strikeRate} sub="runs per 100 balls" color="#764ba2" />
+              <KpiCard label="Total Runs" value={battingTotals.runs} sub={`${battingTotals.balls} balls`} color="var(--series-1)" />
+              <KpiCard label="Team Strike Rate" value={battingTotals.strikeRate} sub="runs per 100 balls" color="var(--brand-2)" />
               <KpiCard
                 label="Boundaries"
                 value={`${battingTotals.fours + battingTotals.sixes}`}
                 sub={`${battingTotals.fours}×4  ${battingTotals.sixes}×6`}
-                color="#dd6b20"
+                color="var(--series-4)"
               />
             </>
           )}
           {topScorer && (
-            <KpiCard label="Top Scorer" value={topScorer.runs} sub={topScorer.playerName} color="#38a169" />
+            <KpiCard label="Top Scorer" value={topScorer.runs} sub={topScorer.playerName} color="var(--series-2)" />
           )}
           {bowlingTotals && (
             <>
-              <KpiCard label="Total Wickets" value={bowlingTotals.wickets} sub={`${bowlingTotals.overs.toFixed(1)} overs`} color="#e53e3e" />
-              <KpiCard label="Economy Rate" value={bowlingTotals.economy} sub="runs per over" color="#d69e2e" />
+              <KpiCard label="Total Wickets" value={bowlingTotals.wickets} sub={`${bowlingTotals.overs.toFixed(1)} overs`} color="var(--chart-wicket)" />
+              <KpiCard label="Economy Rate" value={bowlingTotals.economy} sub="runs per over" color="var(--warning-solid)" />
             </>
           )}
           {topWicketTaker && (
-            <KpiCard label="Top Wickets" value={topWicketTaker.wickets} sub={topWicketTaker.playerName} color="#805ad5" />
+            <KpiCard label="Top Wickets" value={topWicketTaker.wickets} sub={topWicketTaker.playerName} color="var(--series-3)" />
           )}
           {bestEconomy && (
-            <KpiCard label="Best Economy" value={bestEconomy.economy} sub={bestEconomy.playerName} color="#3182ce" />
+            <KpiCard label="Best Economy" value={bestEconomy.economy} sub={bestEconomy.playerName} color="var(--info-solid)" />
           )}
         </div>
       )}
@@ -271,13 +257,11 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
               <h4 className="chart-title">Runs Scored</h4>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={battingChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fill: '#4a5568', fontSize: 13 }} />
-                  <YAxis tick={{ fill: '#4a5568', fontSize: 13 }} />
-                  <Tooltip content={<CustomBattingTooltip />} />
-                  <Bar dataKey="Runs" radius={[6, 6, 0, 0]}>
-                    {battingChartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Bar>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
+                  <XAxis dataKey="name" tick={CHART_AXIS} tickLine={false} axisLine={{ stroke: CHART_GRID }} />
+                  <YAxis tick={CHART_AXIS} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomBattingTooltip />} cursor={{ fill: 'var(--chart-axis)', fillOpacity: 0.08 }} />
+                  <Bar dataKey="Runs" radius={[6, 6, 0, 0]} fill={SERIES_BAT} maxBarSize={48} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -325,7 +309,7 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
                 <PieChart>
                   <Pie data={dismissalData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
                     {dismissalData.map((entry, i) => (
-                      <Cell key={i} fill={DISMISSAL_COLORS[entry.name] || COLORS[i % COLORS.length]} />
+                      <Cell key={i} fill={DISMISSAL_COLORS[entry.name] || PIE_FALLBACK[i % PIE_FALLBACK.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v, n) => [v, n]} />
@@ -346,13 +330,11 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
               <h4 className="chart-title">Wickets Taken</h4>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={bowlingChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fill: '#4a5568', fontSize: 13 }} />
-                  <YAxis allowDecimals={false} tick={{ fill: '#4a5568', fontSize: 13 }} />
-                  <Tooltip content={<CustomBowlingTooltip />} />
-                  <Bar dataKey="Wickets" radius={[6, 6, 0, 0]}>
-                    {bowlingChartData.map((_, i) => <Cell key={i} fill={COLORS[(i + 4) % COLORS.length]} />)}
-                  </Bar>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
+                  <XAxis dataKey="name" tick={CHART_AXIS} tickLine={false} axisLine={{ stroke: CHART_GRID }} />
+                  <YAxis allowDecimals={false} tick={CHART_AXIS} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomBowlingTooltip />} cursor={{ fill: 'var(--chart-axis)', fillOpacity: 0.08 }} />
+                  <Bar dataKey="Wickets" radius={[6, 6, 0, 0]} fill={SERIES_BOWL} maxBarSize={48} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -392,32 +374,8 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
         </div>
       </div>
 
-      {/* ── Run Rate by Over ── */}
-      {runsPerOver && runsPerOver.rows.length > 0 && (
-        <div className="stats-section">
-          <h3>Run Rate by Over</h3>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={runsPerOver.rows} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="over" tick={{ fontSize: 11 }} label={{ value: 'Over', position: 'insideBottomRight', offset: -4, fontSize: 11, fill: '#a0aec0' }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip formatter={(v, name) => [v, name]} labelFormatter={l => `Over ${l}`} />
-                <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
-                {runsPerOver.inningsNums.map((n, i) => (
-                  <Bar
-                    key={n}
-                    dataKey={`i${n}`}
-                    name={`${inningsBatting(deliveries, n)} (${ORDINAL[n - 1] || `${n}th`})`}
-                    fill={INS_COLORS[i % INS_COLORS.length]}
-                    radius={[4, 4, 0, 0]}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      {/* ── Innings Progression: worm + Manhattan ── */}
+      <MatchCharts deliveries={deliveries} />
 
       {/* ── Fall of Wickets ── */}
       {fallOfWickets.length > 0 && (
@@ -461,7 +419,7 @@ function StatisticsView({ matchData, battingStats, bowlingStats, deliveries = []
               <tbody>
                 {extrasData.map((e, i) => (
                   <tr key={i}>
-                    <td>{e.team} <span style={{ color: '#a0aec0', fontSize: '0.8em' }}>({ORDINAL[e.innings - 1]})</span></td>
+                    <td>{e.team} <span style={{ color: 'var(--text-faint)', fontSize: '0.8em' }}>({ORDINAL[e.innings - 1]})</span></td>
                     <td>{e.wides}</td>
                     <td>{e.noBalls}</td>
                     <td>{e.byes}</td>
