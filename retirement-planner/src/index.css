@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input[type="range"] {
+  accent-color: #2563eb;
+}
+
+/* Firefox number input spinners look inconsistent with our styling */
+input[type="number"] {
+  -moz-appearance: textfield;
+}

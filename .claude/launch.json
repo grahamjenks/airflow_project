@@ -6,6 +6,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "cricket-ui"],
       "port": 3000
+    },
+    {
+      "name": "retirement-planner",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "retirement-planner", "--", "--port", "5174"],
+      "port": 5174
+    },
+    {
+      "name": "retirement-planner-built",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview", "--prefix", "retirement-planner", "--", "--port", "4174"],
+      "port": 4174
     }
   ]
 }
