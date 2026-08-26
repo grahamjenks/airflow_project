@@ -1,9 +1,9 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { formatCurrency, formatCurrencyCompact } from '../lib/format'
-import { effectiveAccessAge, potOwner, realRate } from '../lib/projection'
+import { effectiveAccessAge, potOwner, realRate, schemePensionAge } from '../lib/projection'
 import { eventNoteFor, milestoneYears, selectRows } from '../lib/tableRows'
 import type { Assumptions, YearRow } from '../lib/types'
-import { PENSION_COLORS, POT_COLORS } from './chartColors'
+import { DB_PENSION_COLOR, PENSION_COLORS, POT_COLORS } from './chartColors'
 
 interface BalancesTableProps {
   assumptions: Assumptions
@@ -21,6 +21,24 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
   const fmt = compact ? formatCurrencyCompact : formatCurrency
 
   const dcPeople = useMemo(() => a.people.filter((p) => p.pensionType === 'dc'), [a.people])
+  // Salary-based schemes build an annual income rather than a pot, so each one
+  // gets its own column and stays out of the Total.
+  const dbSchemeCols = useMemo(
+    () =>
+      a.people
+        .filter((p) => p.pensionType === 'db')
+        .flatMap((person) =>
+          person.dbSchemes.map((scheme) => ({
+            key: `${person.id}:${scheme.id}`,
+            personId: person.id,
+            schemeId: scheme.id,
+            label: a.people.length > 1 ? `${person.name}: ${scheme.name}` : scheme.name,
+            pensionAge: schemePensionAge(scheme, person),
+          })),
+        ),
+    [a.people],
+  )
+  const showDbSchemes = !showingDrawdown && dbSchemeCols.length > 0
   const milestones = useMemo(() => milestoneYears(a, rows), [a, rows])
   const shown = useMemo(() => selectRows(rows, everyYear, milestones), [rows, everyYear, milestones])
 
@@ -80,7 +98,11 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
             ? `Each savings pot year by year: start + interest + contributions − withdrawals = end. Interest is real growth after ${a.inflationRate}% inflation — ${a.pots.map((p) => `${p.name} ${p.growthRate}% → ${(realRate(p.growthRate, a.inflationRate) * 100).toFixed(2)}%`).join(', ')}.`
             : showingDrawdown
               ? "How much came out of each pot each year. A pot can only be drawn on once it's unlocked."
-              : "Balance of every pot and pension at each year. Greyed values with 🔒 aren't accessible yet."}
+              : `Balance of every pot and pension at each year. Greyed values with 🔒 aren't accessible yet.${
+                  showDbSchemes
+                    ? ' Salary-based schemes hold no pot, so they show the pension built up so far — a yearly income, kept out of the Total.'
+                    : ''
+                }`}
       </p>
 
       {showingBreakdown ? (
@@ -112,6 +134,22 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
                   </span>
                 </th>
               ))}
+              {showDbSchemes &&
+                dbSchemeCols.map((col) => (
+                  <th
+                    key={col.key}
+                    className="px-2 py-2 text-right font-semibold whitespace-nowrap"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: DB_PENSION_COLOR }}
+                      />
+                      {col.label}
+                      <span className="font-normal text-slate-400 dark:text-slate-500">a year</span>
+                    </span>
+                  </th>
+                ))}
               {a.pots.map((pot, i) => (
                 <th key={pot.id} className="px-2 py-2 text-right font-semibold whitespace-nowrap">
                   <span className="inline-flex items-center gap-1.5">
@@ -164,6 +202,20 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
                       />
                     )
                   })}
+                  {showDbSchemes &&
+                    dbSchemeCols.map((col) => {
+                      const py = row.people.find((x) => x.id === col.personId)
+                      const scheme = py?.dbSchemes.find((s) => s.id === col.schemeId)
+                      return (
+                        <AccruedCell
+                          key={col.key}
+                          fmt={fmt}
+                          value={scheme?.accrued ?? 0}
+                          paying={(py?.age ?? 0) >= col.pensionAge}
+                          pensionAge={col.pensionAge}
+                        />
+                      )
+                    })}
                   {a.pots.map((pot, i) => {
                     const { access, owner } = accessAges[i]
                     const locked = owner.currentAge + row.t < access
@@ -325,6 +377,44 @@ function Num({
       }`}
     >
       {zero ? '—' : `${tone === 'out' && value > 0 ? '-' : ''}${fmt(value)}`}
+    </td>
+  )
+}
+
+/**
+ * A salary-based scheme's accrued pension. This is an annual income rather
+ * than a balance, so it is coloured as guaranteed income and never folded
+ * into the Total alongside the pot columns.
+ */
+function AccruedCell({
+  value,
+  fmt,
+  paying,
+  pensionAge,
+}: {
+  value: number
+  fmt: (n: number) => string
+  paying: boolean
+  pensionAge: number
+}) {
+  if (value < 0.5) {
+    return (
+      <td className="px-2 py-1.5 text-right tabular-nums text-slate-300 dark:text-slate-600">—</td>
+    )
+  }
+  return (
+    <td
+      className={`px-2 py-1.5 text-right tabular-nums ${
+        paying ? 'text-violet-600 dark:text-violet-400' : 'text-violet-400 dark:text-violet-300/60'
+      }`}
+      title={
+        paying
+          ? `Being paid — ${fmt(value)} a year for life`
+          : `Built up so far — first paid at ${pensionAge}`
+      }
+    >
+      {!paying && <span className="mr-1">🔒</span>}
+      {fmt(value)}
     </td>
   )
 }
