@@ -15,6 +15,7 @@ import { formatCurrencyCompact } from '../lib/format'
 import type { Assumptions, YearRow } from '../lib/types'
 import { ALERT_COLOR, PENSION_COLORS, POT_COLORS } from './chartColors'
 import { WealthTooltip } from './WealthTooltip'
+import { LABEL_ROW_HEIGHT, labelRows } from './referenceLabels'
 import { makeYearAgeTick, yearAxisLabel } from './YearAxisTick'
 
 export type WealthChartMode = 'stacked' | 'lines'
@@ -42,6 +43,9 @@ export function WealthChart({
 }: WealthChartProps) {
   const lastYear = rows.length > 0 ? rows[rows.length - 1].year : 0
   const baseYear = rows.length > 0 ? rows[0].year : 0
+  // Stack labels that would otherwise print through each other.
+  const retireRows = labelRows(a.people.map((p) => p.retirementAge - p.currentAge))
+  const unlockRows = labelRows(unlocks.map((u) => u.t))
   const dcPeople = a.people.filter((p) => p.pensionType === 'dc')
   const YearTick = makeYearAgeTick(rows)
   // A drawdown marker sitting on a retirement year would print on top of it.
@@ -139,7 +143,7 @@ export function WealthChart({
                 />
               ))}
 
-          {unlocks.map((u) => (
+          {unlocks.map((u, ui) => (
             <ReferenceLine
               key={`${u.label}-${u.t}`}
               x={baseYear + u.t}
@@ -148,12 +152,13 @@ export function WealthChart({
               label={{
                 value: `🔓 ${u.label}`,
                 position: 'insideBottomLeft',
+                dy: -unlockRows[ui] * LABEL_ROW_HEIGHT,
                 fontSize: 10,
                 fill: '#94a3b8',
               }}
             />
           ))}
-          {a.people.map((person) => (
+          {a.people.map((person, i) => (
             <ReferenceLine
               key={`retire-${person.id}`}
               x={baseYear + (person.retirementAge - person.currentAge)}
@@ -162,6 +167,7 @@ export function WealthChart({
               label={{
                 value: `${person.name} retires`,
                 position: 'top',
+                dy: retireRows[i] * LABEL_ROW_HEIGHT,
                 fontSize: 11,
                 fill: '#64748b',
               }}

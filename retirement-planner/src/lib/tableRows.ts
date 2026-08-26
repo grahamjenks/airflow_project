@@ -21,6 +21,8 @@ export function milestoneYears(a: Assumptions, rows: YearRow[]): Set<number> {
     const owner = potOwner(a, pot)
     set.add(effectiveAccessAge(pot, owner.retirementAge) - owner.currentAge)
   })
+  // A lump sum arriving or leaving is always worth a row of its own.
+  a.oneOffEvents.forEach((event) => set.add(event.atAge - a.people[0].currentAge))
   return set
 }
 
@@ -53,6 +55,9 @@ export function eventNoteFor(a: Assumptions, row: YearRow): string | null {
     const access = effectiveAccessAge(pot, owner.retirementAge)
     const t = access - owner.currentAge
     if (t === row.t && t > 0) notes.push(`${pot.name} unlocks`)
+  })
+  a.oneOffEvents.forEach((event) => {
+    if (event.atAge === row.age) notes.push(event.name)
   })
   return notes.length > 0 ? notes.join(' · ') : null
 }

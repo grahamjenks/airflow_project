@@ -1,9 +1,10 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { formatCurrency, formatCurrencyCompact } from '../lib/format'
-import { effectiveAccessAge, potOwner, realRate } from '../lib/projection'
+import { effectiveAccessAge, potOwner, realRate, schemePensionAge } from '../lib/projection'
 import { eventNoteFor, milestoneYears, selectRows } from '../lib/tableRows'
 import type { Assumptions, YearRow } from '../lib/types'
-import { PENSION_COLORS, POT_COLORS } from './chartColors'
+import { DB_PENSION_COLOR, PENSION_COLORS, POT_COLORS } from './chartColors'
+import { SegmentedToggle } from './SegmentedToggle'
 
 interface BalancesTableProps {
   assumptions: Assumptions
@@ -21,6 +22,24 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
   const fmt = compact ? formatCurrencyCompact : formatCurrency
 
   const dcPeople = useMemo(() => a.people.filter((p) => p.pensionType === 'dc'), [a.people])
+  // Salary-based schemes build an annual income rather than a pot, so each one
+  // gets its own column and stays out of the Total.
+  const dbSchemeCols = useMemo(
+    () =>
+      a.people
+        .filter((p) => p.pensionType === 'db')
+        .flatMap((person) =>
+          person.dbSchemes.map((scheme) => ({
+            key: `${person.id}:${scheme.id}`,
+            personId: person.id,
+            schemeId: scheme.id,
+            label: a.people.length > 1 ? `${person.name}: ${scheme.name}` : scheme.name,
+            pensionAge: schemePensionAge(scheme, person),
+          })),
+        ),
+    [a.people],
+  )
+  const showDbSchemes = !showingDrawdown && dbSchemeCols.length > 0
   const milestones = useMemo(() => milestoneYears(a, rows), [a, rows])
   const shown = useMemo(() => selectRows(rows, everyYear, milestones), [rows, everyYear, milestones])
 
@@ -40,7 +59,7 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
           <h2 className="text-sm font-semibold">{title}</h2>
           {badge}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
             {(['balances', 'drawdown', 'breakdown'] as const).map((v) => (
               <button
@@ -57,30 +76,37 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setCompact((v) => !v)}
-            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-            title={compact ? 'Show exact figures' : 'Show rounded figures'}
-          >
-            {compact ? '£12k' : '£12,030'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEveryYear((v) => !v)}
-            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-          >
-            {everyYear ? 'Key years' : 'Every year'}
-          </button>
+          <SegmentedToggle
+            ariaLabel="Figure precision"
+            value={compact}
+            onChange={setCompact}
+            options={[
+              [true, '£12k', 'Rounded figures'],
+              [false, '£12,030', 'Exact figures'],
+            ]}
+          />
+          <SegmentedToggle
+            ariaLabel="Which years to show"
+            value={everyYear}
+            onChange={setEveryYear}
+            options={[
+              [false, 'Key years', 'Milestones and every fifth year'],
+              [true, 'Every year', 'One row per year'],
+            ]}
+          />
         </div>
       </div>
 
       <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
         {showingBreakdown
-            ? `Each savings pot year by year: start + interest + contributions − withdrawals = end. Interest is real growth after ${a.inflationRate}% inflation — ${a.pots.map((p) => `${p.name} ${p.growthRate}% → ${(realRate(p.growthRate, a.inflationRate) * 100).toFixed(2)}%`).join(', ')}.`
+            ? `Each savings pot year by year: start + interest + contributions ${a.oneOffEvents.length > 0 ? '+ one-offs ' : ''}− withdrawals = end. Interest is real growth after ${a.inflationRate}% inflation — ${a.pots.map((p) => `${p.name} ${p.growthRate}% → ${(realRate(p.growthRate, a.inflationRate) * 100).toFixed(2)}%`).join(', ')}.`
             : showingDrawdown
               ? "How much came out of each pot each year. A pot can only be drawn on once it's unlocked."
-              : "Balance of every pot and pension at each year. Greyed values with 🔒 aren't accessible yet."}
+              : `Balance of every pot and pension at each year. Greyed values with 🔒 aren't accessible yet.${
+                  showDbSchemes
+                    ? ' Salary-based schemes hold no pot, so they show the pension built up so far — a yearly income, kept out of the Total.'
+                    : ''
+                }`}
       </p>
 
       {showingBreakdown ? (
@@ -112,6 +138,22 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
                   </span>
                 </th>
               ))}
+              {showDbSchemes &&
+                dbSchemeCols.map((col) => (
+                  <th
+                    key={col.key}
+                    className="px-2 py-2 text-right font-semibold whitespace-nowrap"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: DB_PENSION_COLOR }}
+                      />
+                      {col.label}
+                      <span className="font-normal text-slate-400 dark:text-slate-500">a year</span>
+                    </span>
+                  </th>
+                ))}
               {a.pots.map((pot, i) => (
                 <th key={pot.id} className="px-2 py-2 text-right font-semibold whitespace-nowrap">
                   <span className="inline-flex items-center gap-1.5">
@@ -164,6 +206,20 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
                       />
                     )
                   })}
+                  {showDbSchemes &&
+                    dbSchemeCols.map((col) => {
+                      const py = row.people.find((x) => x.id === col.personId)
+                      const scheme = py?.dbSchemes.find((s) => s.id === col.schemeId)
+                      return (
+                        <AccruedCell
+                          key={col.key}
+                          fmt={fmt}
+                          value={scheme?.accrued ?? 0}
+                          paying={(py?.age ?? 0) >= col.pensionAge}
+                          pensionAge={col.pensionAge}
+                        />
+                      )
+                    })}
                   {a.pots.map((pot, i) => {
                     const { access, owner } = accessAges[i]
                     const locked = owner.currentAge + row.t < access
@@ -214,7 +270,10 @@ function BreakdownTable({
   shown: YearRow[]
   fmt: (n: number) => string
 }) {
-  const cols = ['Start', 'Interest', 'In', 'Out', 'End']
+  const hasOneOffs = a.oneOffEvents.length > 0
+  const cols = hasOneOffs
+    ? ['Start', 'Interest', 'In', 'One-off', 'Out', 'End']
+    : ['Start', 'Interest', 'In', 'Out', 'End']
   return (
     <div className="max-h-96 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700">
       <table className="w-full border-collapse text-xs">
@@ -229,7 +288,7 @@ function BreakdownTable({
             {a.pots.map((pot, i) => (
               <th
                 key={pot.id}
-                colSpan={5}
+                colSpan={cols.length}
                 className="sticky top-0 z-20 border-l border-slate-300 bg-slate-50 px-3 py-1.5 text-center font-semibold whitespace-nowrap dark:border-slate-500 dark:bg-slate-900"
               >
                 <span className="inline-flex items-center gap-1.5">
@@ -274,6 +333,7 @@ function BreakdownTable({
                   const start = row.potStartBalances[i] ?? 0
                   const interest = row.potInterest[i] ?? 0
                   const paidIn = row.potContributions[i] ?? 0
+                  const oneOff = row.potOneOffs[i] ?? 0
                   const out = row.potWithdrawals[i] ?? 0
                   const end = row.potBalances[i] ?? 0
                   return (
@@ -281,6 +341,7 @@ function BreakdownTable({
                       <Num fmt={fmt} value={start} groupStart />
                       <Num fmt={fmt} value={interest} tone="grow" />
                       <Num fmt={fmt} value={paidIn} tone="in" />
+                      {hasOneOffs && <Num fmt={fmt} value={oneOff} tone="oneOff" signed />}
                       <Num fmt={fmt} value={out} tone="out" />
                       <Num fmt={fmt} value={end} bold />
                     </Fragment>
@@ -300,13 +361,16 @@ function Num({
   fmt,
   groupStart = false,
   bold = false,
+  signed = false,
   tone,
 }: {
   value: number
   fmt: (n: number) => string
   groupStart?: boolean
   bold?: boolean
-  tone?: 'grow' | 'in' | 'out'
+  /** Show the sign, for a column that carries money both ways. */
+  signed?: boolean
+  tone?: 'grow' | 'in' | 'out' | 'oneOff'
 }) {
   const zero = Math.abs(value) < 0.5
   const toneClass = zero
@@ -317,14 +381,60 @@ function Num({
         ? 'text-blue-600 dark:text-blue-400'
         : tone === 'out'
           ? 'text-rose-600 dark:text-rose-400'
-          : 'text-slate-700 dark:text-slate-200'
+          : tone === 'oneOff'
+            ? value < 0
+              ? 'text-rose-600 dark:text-rose-400'
+              : 'text-violet-600 dark:text-violet-400'
+            : 'text-slate-700 dark:text-slate-200'
   return (
     <td
       className={`px-2 py-1.5 text-right tabular-nums ${toneClass} ${bold ? 'font-semibold' : ''} ${
         groupStart ? 'border-l border-slate-300 dark:border-slate-500' : ''
       }`}
     >
-      {zero ? '—' : `${tone === 'out' && value > 0 ? '-' : ''}${fmt(value)}`}
+      {zero
+        ? '—'
+        : signed
+          ? `${value > 0 ? '+' : '-'}${fmt(Math.abs(value))}`
+          : `${tone === 'out' && value > 0 ? '-' : ''}${fmt(value)}`}
+    </td>
+  )
+}
+
+/**
+ * A salary-based scheme's accrued pension. This is an annual income rather
+ * than a balance, so it is coloured as guaranteed income and never folded
+ * into the Total alongside the pot columns.
+ */
+function AccruedCell({
+  value,
+  fmt,
+  paying,
+  pensionAge,
+}: {
+  value: number
+  fmt: (n: number) => string
+  paying: boolean
+  pensionAge: number
+}) {
+  if (value < 0.5) {
+    return (
+      <td className="px-2 py-1.5 text-right tabular-nums text-slate-300 dark:text-slate-600">—</td>
+    )
+  }
+  return (
+    <td
+      className={`px-2 py-1.5 text-right tabular-nums ${
+        paying ? 'text-violet-600 dark:text-violet-400' : 'text-violet-400 dark:text-violet-300/60'
+      }`}
+      title={
+        paying
+          ? `Being paid — ${fmt(value)} a year for life`
+          : `Built up so far — first paid at ${pensionAge}`
+      }
+    >
+      {!paying && <span className="mr-1">🔒</span>}
+      {fmt(value)}
     </td>
   )
 }

@@ -116,3 +116,56 @@ export function grossUpPension(
   }
   return high
 }
+
+/**
+ * Employee National Insurance, 2024/25 thresholds and rates. Deliberately not
+ * user-configurable: these exist only to estimate take-home pay from gross,
+ * and anyone needing an exact figure can type their own payslip number.
+ */
+const NI_PRIMARY_THRESHOLD = 12570
+const NI_UPPER_LIMIT = 50270
+const NI_MAIN_RATE = 8
+const NI_UPPER_RATE = 2
+
+/** Employee National Insurance due on a salary, in today's money. */
+export function nationalInsurance(gross: number): number {
+  if (gross <= NI_PRIMARY_THRESHOLD) return 0
+  const main = Math.min(gross, NI_UPPER_LIMIT) - NI_PRIMARY_THRESHOLD
+  const upper = Math.max(0, gross - NI_UPPER_LIMIT)
+  return main * (NI_MAIN_RATE / 100) + upper * (NI_UPPER_RATE / 100)
+}
+
+export interface TakeHomeEstimate {
+  gross: number
+  pensionContribution: number
+  incomeTax: number
+  nationalInsurance: number
+  takeHome: number
+}
+
+/**
+ * Estimated pay reaching the bank. Pension contributions come out first — a
+ * net-pay or salary-sacrifice arrangement, which is how workplace schemes
+ * normally run — so income tax and NI are charged on what is left.
+ *
+ * With tax modelling switched off, only the pension contribution is deducted,
+ * so the one switch keeps one meaning: model UK deductions, or don't.
+ */
+export function estimateTakeHome(
+  gross: number,
+  pensionContributionPct: number,
+  t: TaxSettings,
+): TakeHomeEstimate {
+  const g = Math.max(0, gross)
+  const pensionContribution = g * (Math.max(0, pensionContributionPct) / 100)
+  const afterPension = g - pensionContribution
+  const tax = t.enabled ? incomeTax(afterPension, t) : 0
+  const ni = t.enabled ? nationalInsurance(afterPension) : 0
+  return {
+    gross: g,
+    pensionContribution,
+    incomeTax: tax,
+    nationalInsurance: ni,
+    takeHome: Math.max(0, afterPension - tax - ni),
+  }
+}

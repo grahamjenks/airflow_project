@@ -37,11 +37,24 @@ npm run dev
   gap is drawn from unlocked pots and DC pensions — either spread across them
   proportionally, or in an order you choose.
 
+## Tax
+
+Income tax is applied to pension income — the state pension, salary-based
+pensions, and the taxable share of DC drawdown. ISA and savings withdrawals are
+returns of capital and are not taxed. Rates and bands are editable under
+**Income tax**, and the whole thing can be switched off.
+
+Salaries are held as take-home pay. If you haven't entered your own figure,
+it's estimated from gross by taking off pension contributions first, then
+income tax and National Insurance — the sidebar shows the working. Enter the
+number from your payslip to override it.
+
 ## Not modelled
 
-Income tax, survivor benefits, and any change in spending after a first death.
-Life expectancy differs per person, but spending continues at the full rate for
-the whole projection.
+Survivor benefits, and any change in spending after a first death. Life
+expectancy differs per person, but spending continues at the full rate for the
+whole projection. Contributions to a salary-based scheme aren't deducted from
+take-home pay.
 
 ## Data & privacy
 

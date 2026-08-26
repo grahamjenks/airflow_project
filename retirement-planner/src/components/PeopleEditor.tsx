@@ -1,18 +1,20 @@
 import { formatCurrency } from '../lib/format'
 import { useState } from 'react'
-import { realRate } from '../lib/projection'
+import { realRate, takeHomeEstimateFor } from '../lib/projection'
 import { dbSchemePresets, makeNuvosPartner } from '../lib/storage'
 import type { DbScheme, Person } from '../lib/types'
+import type { TaxSettings } from '../lib/tax'
 import { NumberField } from './NumberField'
 import { SliderField } from './SliderField'
 
 interface PeopleEditorProps {
   people: Person[]
   inflationRate: number
+  tax: TaxSettings
   onChange: (people: Person[]) => void
 }
 
-export function PeopleEditor({ people, inflationRate, onChange }: PeopleEditorProps) {
+export function PeopleEditor({ people, inflationRate, tax, onChange }: PeopleEditorProps) {
   function update(id: string, patch: Partial<Person>) {
     onChange(people.map((p) => (p.id === id ? { ...p, ...patch } : p)))
   }
@@ -33,6 +35,7 @@ export function PeopleEditor({ people, inflationRate, onChange }: PeopleEditorPr
           key={person.id}
           person={person}
           inflationRate={inflationRate}
+          tax={tax}
           canRemove={people.length > 1 && i > 0}
           onChange={(patch) => update(person.id, patch)}
           onRemove={() => remove(person.id)}
@@ -55,13 +58,22 @@ export function PeopleEditor({ people, inflationRate, onChange }: PeopleEditorPr
 interface PersonCardProps {
   person: Person
   inflationRate: number
+  tax: TaxSettings
   canRemove: boolean
   onChange: (patch: Partial<Person>) => void
   onRemove: () => void
 }
 
-function PersonCard({ person, inflationRate, canRemove, onChange, onRemove }: PersonCardProps) {
+function PersonCard({
+  person,
+  inflationRate,
+  tax,
+  canRemove,
+  onChange,
+  onRemove,
+}: PersonCardProps) {
   const isDb = person.pensionType === 'db'
+  const estimate = takeHomeEstimateFor(person, tax)
 
   function updateScheme(id: string, patch: Partial<DbScheme>) {
     onChange({
@@ -139,10 +151,36 @@ function PersonCard({ person, inflationRate, canRemove, onChange, onRemove }: Pe
           step={500}
           hint={
             person.takeHomePay > 0
-              ? 'Annual pay after tax, NI and pension contributions — counted as spendable income.'
-              : 'Not set, so gross is being used as income (overstates it). Enter net annual pay.'
+              ? 'Your own figure — annual pay after tax, NI and pension contributions.'
+              : 'Leave at 0 to use the estimate below, or enter the figure from your payslip.'
           }
         />
+        {person.takeHomePay === 0 && (
+          <div className="mt-1 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+            Estimated <strong>{formatCurrency(estimate.takeHome)}</strong> a year ·{' '}
+            {formatCurrency(estimate.gross)} gross
+            {estimate.pensionContribution > 0 && (
+              <> − {formatCurrency(estimate.pensionContribution)} pension</>
+            )}
+            {tax.enabled ? (
+              <>
+                {' '}
+                − {formatCurrency(estimate.incomeTax)} tax −{' '}
+                {formatCurrency(estimate.nationalInsurance)} NI
+              </>
+            ) : (
+              <> · income tax is switched off, so none is deducted</>
+            )}
+            .
+            {isDb && (
+              <>
+                {' '}
+                Contributions to a salary-based scheme aren't modelled, so this is on the
+                generous side — enter your payslip figure to be exact.
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-3">
@@ -325,7 +363,11 @@ function SchemeCard({ scheme, person, onChange, onRemove }: SchemeCardProps) {
         onChange={(v) => onChange({ accruedAnnualPension: v })}
         prefix="£"
         step={250}
-        hint="From the annual benefit statement, in today's money."
+        hint={
+          scheme.accruedAnnualPension > 0
+            ? "From the annual benefit statement, in today's money."
+            : 'Still zero, so this scheme shows nothing in the tables or charts. Copy the figure from your annual benefit statement.'
+        }
       />
 
       <div className="mt-2 grid grid-cols-2 gap-2">

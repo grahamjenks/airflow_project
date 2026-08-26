@@ -10,6 +10,7 @@ import {
   SALARY_COLOR,
   STATE_PENSION_COLOR,
 } from './chartColors'
+import { SegmentedToggle } from './SegmentedToggle'
 
 interface IncomeTableProps {
   assumptions: Assumptions
@@ -49,7 +50,7 @@ export function IncomeTable({ assumptions: a, rows, title, badge }: IncomeTableP
           <h2 className="text-sm font-semibold">{title}</h2>
           {badge}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
             {([false, true] as const).map((d) => (
               <button
@@ -66,21 +67,24 @@ export function IncomeTable({ assumptions: a, rows, title, badge }: IncomeTableP
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setCompact((v) => !v)}
-            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-            title={compact ? 'Show exact figures' : 'Show rounded figures'}
-          >
-            {compact ? '£12k' : '£12,030'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEveryYear((v) => !v)}
-            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-          >
-            {everyYear ? 'Key years' : 'Every year'}
-          </button>
+          <SegmentedToggle
+            ariaLabel="Figure precision"
+            value={compact}
+            onChange={setCompact}
+            options={[
+              [true, '£12k', 'Rounded figures'],
+              [false, '£12,030', 'Exact figures'],
+            ]}
+          />
+          <SegmentedToggle
+            ariaLabel="Which years to show"
+            value={everyYear}
+            onChange={setEveryYear}
+            options={[
+              [false, 'Key years', 'Milestones and every fifth year'],
+              [true, 'Every year', 'One row per year'],
+            ]}
+          />
         </div>
       </div>
 
