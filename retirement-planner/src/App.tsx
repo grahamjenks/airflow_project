@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { BalancesTable } from './components/BalancesTable'
 import { ContributionsChart } from './components/ContributionsChart'
 import { DrawdownOrder } from './components/DrawdownOrder'
@@ -9,6 +9,7 @@ import { NumberField } from './components/NumberField'
 import { OneOffEvents } from './components/OneOffEvents'
 import { PeopleEditor } from './components/PeopleEditor'
 import { PotsEditor } from './components/PotsEditor'
+import { RetirementAgeBar } from './components/RetirementAgeBar'
 import { SliderField } from './components/SliderField'
 import { SpendingSchedule } from './components/SpendingSchedule'
 import { SpendingSummary } from './components/SpendingSummary'
@@ -76,24 +77,36 @@ function StrategyBadge({ strategy }: { strategy: Assumptions['drawdownStrategy']
 function App() {
   const { assumptions: a, update, replaceAll } = useAssumptions()
   const [importError, setImportError] = useState<string | null>(null)
+  const [undoReset, setUndoReset] = useState<Assumptions | null>(null)
   const [chartMode, setChartMode] = useState<WealthChartMode>('stacked')
   const [showInputs, setShowInputs] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const rows = useMemo(() => simulate(a), [a])
+  // Every derived figure below is expensive: a full projection, plus a
+  // retirement search per person, plus sixteen charts. Deferring them keeps
+  // typing and slider drags responsive — the inputs update immediately and the
+  // results catch up a beat later.
+  const deferred = useDeferredValue(a)
+  const stale = deferred !== a
+
+  const rows = useMemo(() => simulate(deferred), [deferred])
   const shortfall = useMemo(() => firstShortfallRow(rows), [rows])
   const drawdownRow = useMemo(() => drawdownStartRow(rows), [rows])
   const exhausted = useMemo(() => potsExhaustedRow(rows), [rows])
   const finalRow = rows.length > 0 ? rows[rows.length - 1] : null
   const worstShortfall = useMemo(() => worstShortfallRow(rows), [rows])
-  const shortfallTotals = useMemo(() => shortfallSummary(a, rows), [a, rows])
-  const unlocks = useMemo(() => unlockEvents(a), [a])
+  const shortfallTotals = useMemo(() => shortfallSummary(deferred, rows), [deferred, rows])
+  const unlocks = useMemo(() => unlockEvents(deferred), [deferred])
   const primary = a.people[0]
   // Each person's earliest retirement is searched with everyone else's plan
   // held fixed, so the ages are not necessarily achievable all at once.
   const earliestByPerson = useMemo(
-    () => a.people.map((person) => ({ person, ...findEarliestRetirementAge(a, person.id) })),
-    [a],
+    () =>
+      deferred.people.map((person) => ({
+        person,
+        ...findEarliestRetirementAge(deferred, person.id),
+      })),
+    [deferred],
   )
   const earliest = earliestByPerson[0]
 
@@ -112,8 +125,18 @@ function App() {
   function handleReset() {
     if (!confirm('Reset all inputs to the default example and erase your saved data on this device?'))
       return
+    // Reset wipes this device's only copy, so keep the previous plan in memory
+    // and offer it back — the mistake is easy to make and was unrecoverable.
+    const previous = a
     clearAssumptions()
     replaceAll(defaultAssumptions)
+    setUndoReset(() => previous)
+  }
+
+  function undoLastReset() {
+    if (!undoReset) return
+    replaceAll(undoReset)
+    setUndoReset(null)
   }
 
   async function handleImportFile(file: File) {
@@ -184,6 +207,27 @@ function App() {
             </p>
           </div>
         )}
+        {undoReset && (
+          <div className="mx-auto max-w-[1800px] px-4 pb-3">
+            <div className="flex flex-wrap items-center gap-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <span>Reset to the default example. Your previous plan is still recoverable.</span>
+              <button
+                type="button"
+                onClick={undoLastReset}
+                className="rounded border border-amber-400 px-2 py-0.5 font-medium hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900"
+              >
+                Undo reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setUndoReset(null)}
+                className="font-medium underline underline-offset-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto flex max-w-[1800px] flex-col gap-6 px-4 py-6 lg:flex-row">
@@ -196,6 +240,7 @@ function App() {
             <PeopleEditor
               people={a.people}
               inflationRate={a.inflationRate}
+              tax={a.tax}
               onChange={(people) => update('people', people)}
             />
           </InputSection>
@@ -447,7 +492,12 @@ function App() {
           </div>
         </aside>
 
-        <section className="flex-1 space-y-6">
+        <section className="min-w-0 flex-1 space-y-6">
+          <RetirementAgeBar people={a.people} onChange={(people) => update('people', people)} />
+
+          <div
+            className={`space-y-6 transition-opacity duration-150 ${stale ? 'opacity-60' : ''}`}
+          >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {earliestByPerson.map(({ person, earliestAge, searchedUpTo }) => {
               // With more than one person, say what the others are doing —
@@ -532,7 +582,7 @@ function App() {
             />
           </div>
 
-          <SpendingSummary assumptions={a} rows={rows} />
+          <SpendingSummary assumptions={deferred} rows={rows} />
 
           {shortfall && (
             <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
@@ -581,7 +631,7 @@ function App() {
               Pots and DC pensions only — salary-based pensions pay an income and hold no balance.
             </p>
             <WealthChart
-              assumptions={a}
+              assumptions={deferred}
               rows={rows}
               shortfallYear={shortfall?.year ?? null}
               drawdownYear={drawdownRow?.year ?? null}
@@ -598,7 +648,7 @@ function App() {
               the outgoings line by the income tax due; hover for the tax and after-tax figures.
               Mortgage ends {mortgagePaidOffYear}.
             </p>
-            <IncomeChart assumptions={a} rows={rows} drawdownYear={drawdownRow?.year ?? null} />
+            <IncomeChart assumptions={deferred} rows={rows} drawdownYear={drawdownRow?.year ?? null} />
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -608,12 +658,12 @@ function App() {
               charts, and the stack steps down as each person stops working. LISA figures include the
               government bonus.
             </p>
-            <ContributionsChart assumptions={a} rows={rows} />
+            <ContributionsChart assumptions={deferred} rows={rows} />
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <IncomeTable
-              assumptions={a}
+              assumptions={deferred}
               rows={rows}
               title="Income by source"
               badge={<StrategyBadge strategy={a.drawdownStrategy} />}
@@ -622,11 +672,12 @@ function App() {
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <BalancesTable
-              assumptions={a}
+              assumptions={deferred}
               rows={rows}
               title="Pot balances by year"
               badge={<StrategyBadge strategy={a.drawdownStrategy} />}
             />
+          </div>
           </div>
         </section>
       </main>
@@ -634,8 +685,9 @@ function App() {
       <footer className="mx-auto max-w-[1800px] px-4 pb-8 text-center text-xs text-slate-400">
         A planning estimate, not financial advice. Salary-based (defined benefit) pensions are
         modelled as a guaranteed income from their pension age; career-average schemes accrue a share
-        of salary each year worked. Tax, survivor benefits and any reduction in spending after a
-        first death are not modelled.
+        of salary each year worked. Income tax is applied to pension income, and take-home pay is
+        estimated from gross where you haven't entered your own. Survivor benefits and any reduction
+        in spending after a first death are not modelled.
       </footer>
     </div>
   )

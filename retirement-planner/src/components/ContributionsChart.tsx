@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { formatCurrency, formatCurrencyCompact } from '../lib/format'
 import type { Assumptions, YearRow } from '../lib/types'
+import { LABEL_ROW_HEIGHT, labelRows } from './referenceLabels'
 import { PENSION_COLORS, POT_COLORS } from './chartColors'
 import { makeYearAgeTick, yearAxisLabel } from './YearAxisTick'
 
@@ -26,6 +27,7 @@ interface ContributionsChartProps {
  */
 export function ContributionsChart({ assumptions: a, rows }: ContributionsChartProps) {
   const baseYear = rows.length > 0 ? rows[0].year : 0
+  const retireRows = labelRows(a.people.map((p) => p.retirementAge - p.currentAge))
   const dcPeople = a.people.filter((p) => p.pensionType === 'dc')
   const YearTick = makeYearAgeTick(rows)
 
@@ -127,7 +129,7 @@ export function ContributionsChart({ assumptions: a, rows }: ContributionsChartP
             />
           ))}
 
-          {a.people.map((person) => {
+          {a.people.map((person, i) => {
             const year = baseYear + (person.retirementAge - person.currentAge)
             if (year > (visible[visible.length - 1]?.year ?? 0)) return null
             return (
@@ -139,6 +141,7 @@ export function ContributionsChart({ assumptions: a, rows }: ContributionsChartP
                 label={{
                   value: `${person.name} retires`,
                   position: 'top',
+                  dy: retireRows[i] * LABEL_ROW_HEIGHT,
                   fontSize: 11,
                   fill: '#64748b',
                 }}

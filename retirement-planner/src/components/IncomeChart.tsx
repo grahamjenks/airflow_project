@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import { formatCurrencyCompact } from '../lib/format'
 import type { Assumptions, YearRow } from '../lib/types'
+import { LABEL_ROW_HEIGHT, labelRows } from './referenceLabels'
 import {
   ALERT_COLOR,
   DB_PENSION_COLOR,
@@ -32,6 +33,7 @@ interface IncomeChartProps {
 export function IncomeChart({ assumptions: a, rows, drawdownYear }: IncomeChartProps) {
   const lastYear = rows.length > 0 ? rows[rows.length - 1].year : 0
   const baseYear = rows.length > 0 ? rows[0].year : 0
+  const retireRows = labelRows(a.people.map((p) => p.retirementAge - p.currentAge))
   const hasDb = a.people.some((p) => p.pensionType === 'db')
   const dcPeople = a.people.filter((p) => p.pensionType === 'dc')
   const YearTick = makeYearAgeTick(rows)
@@ -145,7 +147,7 @@ export function IncomeChart({ assumptions: a, rows, drawdownYear }: IncomeChartP
             strokeWidth={2}
             dot={false}
           />
-          {a.people.map((person) => (
+          {a.people.map((person, i) => (
             <ReferenceLine
               key={person.id}
               x={baseYear + (person.retirementAge - person.currentAge)}
@@ -154,6 +156,7 @@ export function IncomeChart({ assumptions: a, rows, drawdownYear }: IncomeChartP
               label={{
                 value: `${person.name} retires`,
                 position: 'top',
+                dy: retireRows[i] * LABEL_ROW_HEIGHT,
                 fontSize: 11,
                 fill: '#64748b',
               }}

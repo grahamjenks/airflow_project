@@ -1,4 +1,5 @@
-import { grossUpPension, marginalTax, taxFreePart } from './tax'
+import { estimateTakeHome, grossUpPension, marginalTax, taxFreePart } from './tax'
+import type { TakeHomeEstimate, TaxSettings } from './tax'
 import { pensionSourceId, personIdFromSource } from './types'
 import type {
   Assumptions,
@@ -9,9 +10,28 @@ import type {
   YearRow,
 } from './types'
 
-/** Spendable pay, falling back to gross when no take-home figure is set. */
-export function takeHomeBase(person: Person): number {
-  return person.takeHomePay > 0 ? person.takeHomePay : Math.max(0, person.currentAnnualIncome)
+/**
+ * The share of salary this person pays into a pension, as far as the model
+ * accounts for it. Salary-based schemes take contributions too, but they are
+ * not modelled here, so nothing is assumed for them.
+ */
+export function contributionPctFor(person: Person): number {
+  return person.pensionType === 'dc' ? Math.max(0, person.employeePensionPct) : 0
+}
+
+/**
+ * Spendable pay. A take-home figure entered by hand always wins; otherwise it
+ * is estimated from gross, because treating gross as spendable overstates what
+ * the household has by thousands a year.
+ */
+export function takeHomeBase(person: Person, tax: TaxSettings): number {
+  if (person.takeHomePay > 0) return person.takeHomePay
+  return estimateTakeHome(person.currentAnnualIncome, contributionPctFor(person), tax).takeHome
+}
+
+/** The full estimate, for showing the working in the UI. */
+export function takeHomeEstimateFor(person: Person, tax: TaxSettings): TakeHomeEstimate {
+  return estimateTakeHome(person.currentAnnualIncome, contributionPctFor(person), tax)
 }
 
 /** The age a defined-benefit tranche starts paying. alpha tracks the SPA. */
@@ -209,7 +229,7 @@ export function simulate(a: Assumptions, override?: RetirementOverride): YearRow
       // Gross drives pension accrual and contribution percentages; take-home is
       // what the household can actually spend.
       const salary = retired ? 0 : Math.max(0, person.currentAnnualIncome) * growth
-      const takeHome = retired ? 0 : takeHomeBase(person) * growth
+      const takeHome = retired ? 0 : takeHomeBase(person, a.tax) * growth
       grossSalaryTotal += salary
       salaryTotal += takeHome
 
