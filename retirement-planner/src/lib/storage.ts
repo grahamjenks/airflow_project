@@ -4,6 +4,7 @@ import type {
   Assumptions,
   DbScheme,
   DrawdownStrategy,
+  OneOffEvent,
   PensionType,
   Person,
   SavingsPot,
@@ -218,6 +219,7 @@ function buildDefaults(): Assumptions {
     retirementMonthly: 1900,
     retirementAnnualExtras: 5200,
     spendingChanges: [],
+    oneOffEvents: [],
     mortgageAnnualPayment: 12000,
     mortgageYearsRemaining: 15,
   }
@@ -301,6 +303,17 @@ function coerceBand(raw: unknown, index: number): SpendingBand {
   }
 }
 
+function coerceOneOff(raw: unknown, index: number, potFallback: string): OneOffEvent {
+  const e = (raw ?? {}) as Partial<OneOffEvent>
+  return {
+    id: typeof e.id === 'string' && e.id ? e.id : `oneoff-${index}-${newId()}`,
+    name: typeof e.name === 'string' && e.name ? e.name : 'Inheritance',
+    atAge: num(e.atAge, 60),
+    amount: num(e.amount, 0),
+    potId: typeof e.potId === 'string' && e.potId ? e.potId : potFallback,
+  }
+}
+
 /**
  * Resolves the monthly/extras pair, falling back to an older single annual
  * figure by splitting it into whole months plus the remainder — so the yearly
@@ -365,6 +378,7 @@ export function coerceAssumptions(raw: unknown): Assumptions {
   pots.forEach((pot) => {
     if (!validOwners.has(pot.ownerId)) pot.ownerId = ownerFallback
   })
+  const validPots = new Set(pots.map((p) => p.id))
 
   // Records saved before costs were split carry a single annual figure.
   const working = splitCosts(
@@ -403,6 +417,14 @@ export function coerceAssumptions(raw: unknown): Assumptions {
     spendingChanges: Array.isArray(parsed.spendingChanges)
       ? parsed.spendingChanges.map(coerceBand)
       : [],
+    // An event whose pot was deleted falls back to the first pot; with no
+    // pots at all there is nowhere for the money to land, so it is dropped.
+    oneOffEvents:
+      Array.isArray(parsed.oneOffEvents) && pots.length > 0
+        ? parsed.oneOffEvents
+            .map((e, i) => coerceOneOff(e, i, pots[0].id))
+            .map((e) => (validPots.has(e.potId) ? e : { ...e, potId: pots[0].id }))
+        : [],
     mortgageAnnualPayment: num(parsed.mortgageAnnualPayment, fallback.mortgageAnnualPayment),
     mortgageYearsRemaining: num(parsed.mortgageYearsRemaining, fallback.mortgageYearsRemaining),
   }

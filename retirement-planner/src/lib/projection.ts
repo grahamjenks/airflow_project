@@ -286,6 +286,20 @@ export function simulate(a: Assumptions, override?: RetirementOverride): YearRow
     const potInterest = balances.map((b, i) => b * potGrowth[i])
     balances = balances.map((b, i) => b + potInterest[i] + potContributions[i])
 
+    // One-off lump sums land after growth, so a windfall doesn't earn a full
+    // year's return in the year it arrives — the same treatment contributions
+    // get. Money in is spendable straight away, subject to the pot's own
+    // access rules; money out can never take a pot below zero.
+    const potOneOffs = new Array<number>(balances.length).fill(0)
+    for (const event of a.oneOffEvents) {
+      if (event.atAge !== anchorAge) continue
+      const i = potIndexById.get(event.potId)
+      if (i === undefined) continue
+      const applied = event.amount < 0 ? -Math.min(balances[i], -event.amount) : event.amount
+      potOneOffs[i] += applied
+      balances[i] += applied
+    }
+
     // --- Spending, tax, and the gap to fill ---
     // Salaries are entered as take-home, so only pension income is taxed here.
     // ISA and savings withdrawals are returns of capital and stay untaxed.
@@ -464,6 +478,7 @@ export function simulate(a: Assumptions, override?: RetirementOverride): YearRow
       potBalances: [...balances],
       potWithdrawals: potTaken,
       potContributions,
+      potOneOffs,
       potsTotal,
       pensionsTotal,
       totalPot: potsTotal + pensionsTotal,

@@ -95,7 +95,7 @@ export function BalancesTable({ assumptions: a, rows, title, badge }: BalancesTa
 
       <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
         {showingBreakdown
-            ? `Each savings pot year by year: start + interest + contributions − withdrawals = end. Interest is real growth after ${a.inflationRate}% inflation — ${a.pots.map((p) => `${p.name} ${p.growthRate}% → ${(realRate(p.growthRate, a.inflationRate) * 100).toFixed(2)}%`).join(', ')}.`
+            ? `Each savings pot year by year: start + interest + contributions ${a.oneOffEvents.length > 0 ? '+ one-offs ' : ''}− withdrawals = end. Interest is real growth after ${a.inflationRate}% inflation — ${a.pots.map((p) => `${p.name} ${p.growthRate}% → ${(realRate(p.growthRate, a.inflationRate) * 100).toFixed(2)}%`).join(', ')}.`
             : showingDrawdown
               ? "How much came out of each pot each year. A pot can only be drawn on once it's unlocked."
               : `Balance of every pot and pension at each year. Greyed values with 🔒 aren't accessible yet.${
@@ -266,7 +266,10 @@ function BreakdownTable({
   shown: YearRow[]
   fmt: (n: number) => string
 }) {
-  const cols = ['Start', 'Interest', 'In', 'Out', 'End']
+  const hasOneOffs = a.oneOffEvents.length > 0
+  const cols = hasOneOffs
+    ? ['Start', 'Interest', 'In', 'One-off', 'Out', 'End']
+    : ['Start', 'Interest', 'In', 'Out', 'End']
   return (
     <div className="max-h-96 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700">
       <table className="w-full border-collapse text-xs">
@@ -281,7 +284,7 @@ function BreakdownTable({
             {a.pots.map((pot, i) => (
               <th
                 key={pot.id}
-                colSpan={5}
+                colSpan={cols.length}
                 className="sticky top-0 z-20 border-l border-slate-300 bg-slate-50 px-3 py-1.5 text-center font-semibold whitespace-nowrap dark:border-slate-500 dark:bg-slate-900"
               >
                 <span className="inline-flex items-center gap-1.5">
@@ -326,6 +329,7 @@ function BreakdownTable({
                   const start = row.potStartBalances[i] ?? 0
                   const interest = row.potInterest[i] ?? 0
                   const paidIn = row.potContributions[i] ?? 0
+                  const oneOff = row.potOneOffs[i] ?? 0
                   const out = row.potWithdrawals[i] ?? 0
                   const end = row.potBalances[i] ?? 0
                   return (
@@ -333,6 +337,7 @@ function BreakdownTable({
                       <Num fmt={fmt} value={start} groupStart />
                       <Num fmt={fmt} value={interest} tone="grow" />
                       <Num fmt={fmt} value={paidIn} tone="in" />
+                      {hasOneOffs && <Num fmt={fmt} value={oneOff} tone="oneOff" signed />}
                       <Num fmt={fmt} value={out} tone="out" />
                       <Num fmt={fmt} value={end} bold />
                     </Fragment>
@@ -352,13 +357,16 @@ function Num({
   fmt,
   groupStart = false,
   bold = false,
+  signed = false,
   tone,
 }: {
   value: number
   fmt: (n: number) => string
   groupStart?: boolean
   bold?: boolean
-  tone?: 'grow' | 'in' | 'out'
+  /** Show the sign, for a column that carries money both ways. */
+  signed?: boolean
+  tone?: 'grow' | 'in' | 'out' | 'oneOff'
 }) {
   const zero = Math.abs(value) < 0.5
   const toneClass = zero
@@ -369,14 +377,22 @@ function Num({
         ? 'text-blue-600 dark:text-blue-400'
         : tone === 'out'
           ? 'text-rose-600 dark:text-rose-400'
-          : 'text-slate-700 dark:text-slate-200'
+          : tone === 'oneOff'
+            ? value < 0
+              ? 'text-rose-600 dark:text-rose-400'
+              : 'text-violet-600 dark:text-violet-400'
+            : 'text-slate-700 dark:text-slate-200'
   return (
     <td
       className={`px-2 py-1.5 text-right tabular-nums ${toneClass} ${bold ? 'font-semibold' : ''} ${
         groupStart ? 'border-l border-slate-300 dark:border-slate-500' : ''
       }`}
     >
-      {zero ? '—' : `${tone === 'out' && value > 0 ? '-' : ''}${fmt(value)}`}
+      {zero
+        ? '—'
+        : signed
+          ? `${value > 0 ? '+' : '-'}${fmt(Math.abs(value))}`
+          : `${tone === 'out' && value > 0 ? '-' : ''}${fmt(value)}`}
     </td>
   )
 }

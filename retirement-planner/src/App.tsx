@@ -6,6 +6,7 @@ import { IncomeChart } from './components/IncomeChart'
 import { IncomeTable } from './components/IncomeTable'
 import { InputSection } from './components/InputSection'
 import { NumberField } from './components/NumberField'
+import { OneOffEvents } from './components/OneOffEvents'
 import { PeopleEditor } from './components/PeopleEditor'
 import { PotsEditor } from './components/PotsEditor'
 import { SliderField } from './components/SliderField'
@@ -291,6 +292,24 @@ function App() {
               lifeExpectancy={primary.lifeExpectancy}
               changes={a.spendingChanges}
               onChange={(changes) => update('spendingChanges', changes)}
+            />
+          </InputSection>
+
+          <InputSection
+            title={`One-off events (${a.oneOffEvents.length})`}
+            defaultOpen={a.oneOffEvents.length > 0}
+          >
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Lump sums that happen once — an inheritance or windfall coming in, a gift or a
+              big one-time cost going out. Each one lands in the pot you choose.
+            </p>
+            <OneOffEvents
+              events={a.oneOffEvents}
+              pots={a.pots}
+              primaryName={primary.name}
+              currentAge={primary.currentAge}
+              retirementAge={primary.retirementAge}
+              onChange={(events) => update('oneOffEvents', events)}
             />
           </InputSection>
 

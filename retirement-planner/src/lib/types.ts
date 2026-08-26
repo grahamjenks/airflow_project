@@ -96,6 +96,22 @@ export function personIdFromSource(sourceId: string): string | null {
 }
 
 /**
+ * A one-off lump sum moving in or out of a savings pot at a set age — an
+ * inheritance or a windfall coming in, a gift or a big one-time cost going
+ * out. Unlike a spending change it happens once, in a single year.
+ */
+export interface OneOffEvent {
+  id: string
+  name: string
+  /** Age of the first person in the year it happens. */
+  atAge: number
+  /** Positive money in, negative money out. */
+  amount: number
+  /** The pot it lands in, or is taken from. */
+  potId: string
+}
+
+/**
  * A change in planned household spending at a given age of the first person.
  */
 export interface SpendingBand {
@@ -131,6 +147,9 @@ export interface Assumptions {
   retirementAnnualExtras: number
   /** Later step-changes, expressed as a total for the year. */
   spendingChanges: SpendingBand[]
+
+  /** One-off lump sums in or out of a pot, e.g. an inheritance or a gift. */
+  oneOffEvents: OneOffEvent[]
 
   mortgageAnnualPayment: number
   mortgageYearsRemaining: number
@@ -180,6 +199,8 @@ export interface YearRow {
   potBalances: number[]
   potWithdrawals: number[]
   potContributions: number[]
+  /** One-off lump sums applied this year: positive in, negative out. */
+  potOneOffs: number[]
   potsTotal: number
 
   /** Combined DC pension pots. */
