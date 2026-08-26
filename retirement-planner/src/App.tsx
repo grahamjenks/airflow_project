@@ -89,10 +89,13 @@ function App() {
   const shortfallTotals = useMemo(() => shortfallSummary(a, rows), [a, rows])
   const unlocks = useMemo(() => unlockEvents(a), [a])
   const primary = a.people[0]
-  const earliest = useMemo(
-    () => findEarliestRetirementAge(a, primary.id),
-    [a, primary.id],
+  // Each person's earliest retirement is searched with everyone else's plan
+  // held fixed, so the ages are not necessarily achievable all at once.
+  const earliestByPerson = useMemo(
+    () => a.people.map((person) => ({ person, ...findEarliestRetirementAge(a, person.id) })),
+    [a],
   )
+  const earliest = earliestByPerson[0]
 
   const mortgagePaidOffYear = new Date().getFullYear() + a.mortgageYearsRemaining
   const retirementRow = rows.find((r) => r.householdRetired) ?? null
@@ -446,16 +449,29 @@ function App() {
 
         <section className="flex-1 space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <SummaryCard
-              label={`${primary.name}: earliest retirement`}
-              value={earliest.earliestAge ?? '85+'}
-              tone={earliest.earliestAge ? 'good' : 'bad'}
-              sub={
-                earliest.earliestAge
-                  ? 'Household income needs met for life.'
-                  : `Still falls short retiring at ${earliest.searchedUpTo}.`
-              }
-            />
+            {earliestByPerson.map(({ person, earliestAge, searchedUpTo }) => {
+              // With more than one person, say what the others are doing —
+              // otherwise the ages read as if they could all happen together.
+              const others = a.people
+                .filter((p) => p.id !== person.id)
+                .map((p) => `${p.name} at ${p.retirementAge}`)
+                .join(' and ')
+              return (
+                <SummaryCard
+                  key={person.id}
+                  label={`${person.name}: earliest retirement`}
+                  value={earliestAge ?? `${searchedUpTo}+`}
+                  tone={earliestAge ? 'good' : 'bad'}
+                  sub={
+                    earliestAge
+                      ? others
+                        ? `Household income needs met for life, with ${others}.`
+                        : 'Household income needs met for life.'
+                      : `Still falls short retiring at ${searchedUpTo}.`
+                  }
+                />
+              )
+            })}
             <SummaryCard
               label="Total shortfall"
               value={shortfall ? formatCurrency(shortfallTotals.total) : 'None'}
